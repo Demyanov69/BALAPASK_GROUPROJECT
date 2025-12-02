@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nim — Игра</title>
+
+  <!-- Рубрика шрифта (интернет-ссылка на Google Fonts) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg1: #fff0f6;
+      --bg2: #ffe6f0;
+      --accent1: #ff6fa3;
+      --accent2: #ff9abf;
+      --card: #ffffff;
+      --muted: #6b6b6b;
+      --glass: rgba(255,255,255,0.6);
+      --success: #28a745;
+      --danger: #dc3545;
+      --shadow: 0 6px 30px rgba(255,105,145,0.12);
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%);
+      color:#222;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .container{
+      max-width: 980px;
+      margin: 36px auto;
+      padding: 24px;
+    }
+
+    header{
+      text-align:center;
+      margin-bottom: 18px;
+    }
+
+    header h1{
+      margin:0;
+      font-weight:700;
+      letter-spacing:-0.4px;
+      color: #2a2a2a;
+    }
+    header p{ margin:8px 0 0; color:var(--muted); }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 380px;
+      gap:20px;
+      align-items:start;
+    }
+
+    /* Card */
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.82));
+      border-radius:16px;
+      padding:18px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,111,140,0.08);
+    }
+
+    /* Game area */
+    #gameHeader{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+    .controls-row{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      margin-top:12px;
+    }
+
+    input[type="number"]{
+      width:100px;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid rgba(0,0,0,0.08);
+      font-size:14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+
+    button.btn{
+      background: linear-gradient(180deg, var(--accent2), var(--accent1));
+      color:#fff;
+      border:none;
+      padding:10px 14px;
+      border-radius:10px;
+      font-weight:600;
+      cursor:pointer;
+      transition: transform .12s ease, box-shadow .12s;
+      box-shadow: 0 6px 18px rgba(255,111,140,0.18);
+    }
+    button.btn:active{ transform: translateY(1px) scale(.998); }
+    button.btn.ghost{
+      background:transparent;
+      color:var(--accent1);
+      border:1px solid rgba(255,111,140,0.14);
+      box-shadow:none;
+    }
+    button.btn[disabled], .small-btn[disabled]{
+      opacity:0.46; cursor:not-allowed; transform:none; box-shadow:none;
+    }
+
+    /* Sticks display */
+    #sticksWrap{ margin-top:18px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .group {
+      display:inline-flex;
+      align-items:center;
+      padding:8px;
+      border-radius:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.65));
+      box-shadow: 0 8px 20px rgba(255,105,145,0.06);
+      border:1px solid rgba(255,111,140,0.06);
+    }
+    .bar {
+      width:18px; height:18px; border-radius:6px; margin-right:6px;
+      background: linear-gradient(180deg,#ffb7d2,#ff80ab);
+      box-shadow: 0 4px 8px rgba(255,111,140,0.18);
+      transition: transform .28s cubic-bezier(.2,.95,.17,1), opacity .2s;
+    }
+    .bar.removed{
+      transform: translateY(14px) scale(.6);
+      opacity:0;
+    }
+
+    .meta{
+      display:flex; gap:12px; margin-top:12px; align-items:center; flex-wrap:wrap;
+    }
+    .pill{
+      background:var(--glass); padding:8px 10px; border-radius:999px; font-weight:600; color:var(--accent1);
+      border:1px solid rgba(255,111,140,0.06);
+    }
+
+    /* Right column: log + actions */
+    .side{
+      position:relative;
+    }
+    #log{ min-height:240px; max-height:420px; overflow:auto; background:linear-gradient(180deg, #fff, rgba(255,255,255,0.98)); padding:12px; border-radius:12px; border:1px solid rgba(0,0,0,0.03); }
+    .log-entry{ margin-bottom:10px; padding:8px; border-radius:8px; background:linear-gradient(180deg,#fff,#fff); box-shadow: inset 0 -1px 0 rgba(0,0,0,0.02); }
+    .log-entry.time{ font-size:12px; color:#777; margin-bottom:6px; }
+    .log-entry .who{ font-weight:600; color:var(--accent1); margin-right:8px; }
+    .muted{ color:var(--muted); font-size:13px; }
+
+    /* Footer small text */
+    .help{ margin-top:10px; color:var(--muted); font-size:13px; }
+
+    /* Responsive */
+    @media (max-width:880px){
+      .grid{ grid-template-columns: 1fr; }
+      .side{ order:-1; margin-bottom:12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Nim — игра со спичками</h1>
+      <p>Игрок ходит первым. Бот играет по стратегии кратности 4. Интерфейс — розовый и современный ✨</p>
+    </header>
+
+    <div class="grid">
+      <!-- Left: Game -->
+      <div class="card">
+        <div id="gameHeader">
+          <div>
+            <div style="font-size:14px; color:var(--muted)">Начальное количество</div>
+            <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+              <input id="init" type="number" value="13" min="1" />
+              <button id="start" class="btn">Запустить</button>
+              <button id="reset" class="btn ghost" style="display:none;">Заново</button>
+            </div>
+          </div>
+
+          <div style="text-align:right;">
+            <div style="font-size:13px; color:var(--muted);">Сейчас</div>
+            <div class="pill" id="turnPill">—</div>
+          </div>
+        </div>
+
+        <div id="sticksWrap" style="margin-top:18px;">
+          <div style="flex-basis:100%">
+            <div style="font-size:13px; color:var(--muted)">Поле (спички сгруппированы по 4)</div>
+            <div id="sticks" style="margin-top:8px;"></div>
+          </div>
+        </div>
+
+        <div class="meta">
+          <div class="pill" id="countPill">Осталось: —</div>
+          <div class="pill muted" id="rangePill">Можно взять: —</div>
+          <div style="flex:1"></div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <div id="controls" class="controls-row">
+            <button class="btn" data-take="1">Взять 1</button>
+            <button class="btn" data-take="2">Взять 2</button>
+            <button class="btn" data-take="3">Взять 3</button>
+          </div>
+          <div class="help">Кнопки автоматически отключаются, если ход недоступен.</div>
+        </div>
+      </div>
+
+      <!-- Right: Log / Info -->
+      <div class="side">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; font-size:16px;">Ход и лог</h3>
+            <div style="font-size:13px; color:var(--muted)">Интерактив</div>
+          </div>
+
+          <div id="log" style="margin-top:12px;"></div>
+
+          <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
+            <button id="showState" class="btn ghost">Обновить состояние</button>
+            <div style="flex:1"></div>
+            <small class="muted">Проект на SWI-Prolog</small>
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- grid -->
+  </div> <!-- container -->
+
+  <script>
+    // UI logic (подключается к серверу, API как раньше: /start, /player_move, /state)
+    const startBtn = document.getElementById('start');
+    const resetBtn = document.getElementById('reset');
+    const initInput = document.getElementById('init');
+    const gameDiv = document.querySelector('.card');
+    const sticksDiv = document.getElementById('sticks');
+    const infoPill = document.getElementById('turnPill');
+    const countPill = document.getElementById('countPill');
+    const rangePill = document.getElementById('rangePill');
+    const logDiv = document.getElementById('log');
+    const controls = document.getElementById('controls');
+
+    let currentSticks = 0;
+    let currentTurn = null;
+
+    function setTurn(t){
+      currentTurn = t;
+      infoPill.textContent = (t==='player')? 'Ваш ход' : (t==='bot'? 'Ход бота' : '—');
+      infoPill.style.background = (t==='player')? 'linear-gradient(90deg,#fff,#fff)' : 'linear-gradient(90deg,#fff,#fff)';
+    }
+
+    function setCount(n){
+      currentSticks = n;
+      countPill.textContent = 'Осталось: ' + n;
+      const maxTake = Math.min(3, n);
+      rangePill.textContent = 'Можно взять: 1–' + maxTake;
+      // disable buttons if not allowed
+      document.querySelectorAll('#controls button').forEach(b=>{
+        const take = parseInt(b.dataset.take,10);
+        b.disabled = (take > maxTake) || (n === 0) || (currentTurn !== 'player');
+      });
+    }
+
+    function appendLog(who, text){
+      const wrap = document.createElement('div');
+      wrap.className = 'log-entry';
+      const time = new Date().toLocaleTimeString();
+      wrap.innerHTML = '<div class="time">'+time+'</div><div><span class="who">'+who+':</span> <span>'+text+'</span></div>';
+      logDiv.prepend(wrap);
+    }
+
+    function renderSticks(n, animateTakenCount=0){
+      // animateTakenCount: сколько только что убрано (для анимации)
+      // создаём группы по 4
+      sticksDiv.innerHTML = '';
+      let rem = n;
+      let index = 0;
+      while (rem > 0){
+        const group = document.createElement('div');
+        group.className = 'group';
+        const inGroup = Math.min(4, rem);
+        for (let i=0;i<inGroup;i++){
+          const bar = document.createElement('div');
+          bar.className = 'bar';
+          // если нужно анимировать последние taken
+          if (animateTakenCount>0 && index < animateTakenCount){
+            // mark as removed: add class after a microtask so transition occurs
+            setTimeout(()=> bar.classList.add('removed'), 40 + (index*40));
+            index++;
+          }
+          group.appendChild(bar);
+        }
+        sticksDiv.appendChild(group);
+        rem -= inGroup;
+      }
+      if (n===0) sticksDiv.textContent = '[пусто]';
+    }
+
+    startBtn.onclick = async () => {
+      const sticks = Math.max(1, parseInt(initInput.value) || 13);
+      startBtn.disabled = true;
+      appendLog('Система','Запуск игры с ' + sticks + ' спичками...');
+      try{
+        const res = await fetch('/start', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({sticks})
+        });
+        const json = await res.json();
+        if (!json.ok) { appendLog('Система','Ошибка старта: ' + (json.error||'unknown')); startBtn.disabled=false; return; }
+        renderSticks(json.sticks);
+        setCount(json.sticks);
+        setTurn(json.turn);
+        appendLog('Система','Игра запущена. Ваш ход.');
+        startBtn.style.display='none';
+        resetBtn.style.display='inline-block';
+      }catch(e){
+        appendLog('Система','Ошибка сети: ' + e.message);
+        startBtn.disabled=false;
+      }
+    };
+
+    resetBtn.onclick = () => {
+      // простая перезагрузка интерфейса
+      window.location.reload();
+    };
+
+    document.getElementById('controls').addEventListener('click', async (ev)=>{
+      const btn = ev.target.closest('button[data-take]');
+      if (!btn) return;
+      const take = parseInt(btn.dataset.take,10);
+      if (currentTurn !== 'player') { appendLog('Система','Сейчас не ваш ход.'); return; }
+      // блокируем кнопки на время запроса
+      document.querySelectorAll('#controls button').forEach(b=>b.disabled=true);
+      appendLog('Игрок','Берёт ' + take);
+      try{
+        const res = await fetch('/player_move', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({take})
+        });
+        const j = await res.json();
+        if (!j.ok) {
+          appendLog('Система','Ошибка: ' + (j.error||'unknown'));
+          setCount(currentSticks);
+          return;
+        }
+
+        if (j.winner === 'player'){
+          renderSticks(0, take); // animate taken
+          setCount(0);
+          setTurn(null);
+          appendLog('Игрок','Вы выиграли! Поздравляю 🎉');
+          return;
+        }
+
+        // иначе бот отыграл или обновил состояние
+        // j contains sticks (new), playerMove, botMove, botExplanation
+        renderSticks(j.sticks);
+        const botMove = j.botMove;
+        const botExp = j.botExplanation || '';
+        appendLog('Бот','Берёт ' + botMove + (botExp? '. ' + botExp : ''));
+        setCount(j.sticks);
+
+        if (j.winner === 'bot'){
+          setTurn(null);
+          appendLog('Система','Бот выиграл. Попробуйте снова.');
+          return;
+        }
+
+        // если игра не закончена — пользовать ходит
+        setTurn('player');
+      }catch(err){
+        appendLog('Система','Сетевая ошибка: ' + err.message);
+      } finally {
+        // включаем/выключаем кнопки по состоянию
+        setCount(currentSticks);
+      }
+    });
+
+    document.getElementById('showState').addEventListener('click', async ()=>{
+      try{
+        const r = await fetch('/state');
+        const j = await r.json();
+        if (!j.ok) { appendLog('Система','Игра не запущена'); return; }
+        renderSticks(j.sticks);
+        setCount(j.sticks);
+        setTurn(j.turn);
+        appendLog('Система','Состояние обновлено');
+      }catch(e){ appendLog('Система','Ошибка: ' + e.message); }
+    });
+
+    // initial UI
+    renderSticks(0);
+    setCount(0);
+    setTurn(null);
+    appendLog('Система','Готово. Нажмите «Запустить», чтобы начать.');
+  </script>
+</body>
+</html>
