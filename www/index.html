@@ -1,403 +1,561 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Nim — Игра</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Nim — красочные взрывы и реальные звуки</title>
 
-  <!-- Рубрика шрифта (интернет-ссылка на Google Fonts) -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <style>
     :root{
-      --bg1: #fff0f6;
-      --bg2: #ffe6f0;
-      --accent1: #ff6fa3;
-      --accent2: #ff9abf;
-      --card: #ffffff;
-      --muted: #6b6b6b;
+      --bg1:#fff7fb; --bg2:#ffeef6;
+      --card:#ffffff;
+      --accent:#ff6fa3;
+      --accent-2:#ff9abf;
+      --muted:#6b6b6b;
       --glass: rgba(255,255,255,0.6);
-      --success: #28a745;
-      --danger: #dc3545;
-      --shadow: 0 6px 30px rgba(255,105,145,0.12);
+      --shadow: 0 8px 30px rgba(213,78,131,0.08);
     }
-
-    html,body{
-      height:100%;
-      margin:0;
-      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%);
-      color:#222;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
+    html,body{height:100%; margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+    body{
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(255,140,186,0.08), transparent),
+                  linear-gradient(180deg,var(--bg1),var(--bg2));
+      color:#222; -webkit-font-smoothing:antialiased;
     }
+    .wrap{max-width:1100px; margin:28px auto; padding:20px;}
+    header{display:flex; gap:16px; align-items:center; margin-bottom:18px;}
+    header .brand{flex:1;}
+    header h1{margin:0; font-size:1.4rem; color: #6b0f4a;}
+    header p{margin:4px 0 0; color:var(--muted); font-size:0.95rem;}
 
-    .container{
-      max-width: 980px;
-      margin: 36px auto;
-      padding: 24px;
-    }
+    .grid{display:grid; grid-template-columns: 1fr 420px; gap:18px;}
+    @media (max-width:980px){ .grid{grid-template-columns:1fr;} }
 
-    header{
-      text-align:center;
-      margin-bottom: 18px;
-    }
-
-    header h1{
-      margin:0;
-      font-weight:700;
-      letter-spacing:-0.4px;
-      color: #2a2a2a;
-    }
-    header p{ margin:8px 0 0; color:var(--muted); }
-
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr 380px;
-      gap:20px;
-      align-items:start;
-    }
-
-    /* Card */
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.82));
-      border-radius:16px;
-      padding:18px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(255,111,140,0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.92));
+      border-radius:14px; padding:18px; box-shadow:var(--shadow); border:1px solid rgba(255,111,140,0.06);
     }
 
-    /* Game area */
-    #gameHeader{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-    }
-    .controls-row{
-      display:flex;
-      gap:8px;
-      align-items:center;
-      margin-top:12px;
-    }
+    .controls-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    input[type="number"], select{padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.06); font-size:0.95rem;}
+    .btn-pink{background:linear-gradient(180deg,var(--accent-2),var(--accent)); color:#fff; border:none; padding:8px 12px; border-radius:10px; font-weight:600; cursor:pointer;}
+    .btn-ghost{background:transparent; border:1px solid rgba(0,0,0,0.06); padding:8px 12px; border-radius:10px; cursor:pointer;}
+    .small-muted{color:var(--muted); font-size:0.9rem;}
 
-    input[type="number"]{
-      width:100px;
-      padding:10px 12px;
-      border-radius:10px;
-      border:1px solid rgba(0,0,0,0.08);
-      font-size:14px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
-    }
+    /* sticks */
+    #sticks{margin-top:8px; display:flex; flex-wrap:wrap; gap:8px;}
+    .group{display:inline-flex; gap:6px; padding:8px; border-radius:12px; background:rgba(255,255,255,0.92); align-items:center; transition:transform .18s;}
+    .bar{width:18px;height:18px;border-radius:6px;background:linear-gradient(180deg,#ffb7d2,#ff80ab); box-shadow: 0 6px 16px rgba(255,111,140,0.12); transition: transform .45s, opacity .35s;}
+    .bar.removed{ transform: translateY(30px) scale(.5) rotate(10deg); opacity:0; }
 
-    button.btn{
-      background: linear-gradient(180deg, var(--accent2), var(--accent1));
-      color:#fff;
-      border:none;
-      padding:10px 14px;
-      border-radius:10px;
-      font-weight:600;
-      cursor:pointer;
-      transition: transform .12s ease, box-shadow .12s;
-      box-shadow: 0 6px 18px rgba(255,111,140,0.18);
-    }
-    button.btn:active{ transform: translateY(1px) scale(.998); }
-    button.btn.ghost{
-      background:transparent;
-      color:var(--accent1);
-      border:1px solid rgba(255,111,140,0.14);
-      box-shadow:none;
-    }
-    button.btn[disabled], .small-btn[disabled]{
-      opacity:0.46; cursor:not-allowed; transform:none; box-shadow:none;
-    }
+    /* log */
+    #log{max-height:480px; overflow:auto; padding:10px; border-radius:10px; background:linear-gradient(180deg,#fff,#fff); border:1px solid rgba(0,0,0,0.03);}
+    .log-entry{padding:8px; border-radius:8px; margin-bottom:10px; background:linear-gradient(180deg,#fff,#fff); box-shadow:inset 0 -1px 0 rgba(0,0,0,0.02);}
 
-    /* Sticks display */
-    #sticksWrap{ margin-top:18px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-    .group {
-      display:inline-flex;
-      align-items:center;
-      padding:8px;
-      border-radius:12px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.65));
-      box-shadow: 0 8px 20px rgba(255,105,145,0.06);
-      border:1px solid rgba(255,111,140,0.06);
-    }
-    .bar {
-      width:18px; height:18px; border-radius:6px; margin-right:6px;
-      background: linear-gradient(180deg,#ffb7d2,#ff80ab);
-      box-shadow: 0 4px 8px rgba(255,111,140,0.18);
-      transition: transform .28s cubic-bezier(.2,.95,.17,1), opacity .2s;
-    }
-    .bar.removed{
-      transform: translateY(14px) scale(.6);
-      opacity:0;
-    }
+    /* canvases & overlays */
+    #overlayDark{position:fixed; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:9996; transition:background .45s;}
+    #overlayDark.active{ background: rgba(0,0,0,0.36); }
+    canvas.fx, canvas.rain{ position:fixed; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:9997; }
+    .shake{ animation: screenShake .65s ease; }
+    @keyframes screenShake { 0%{transform:none} 20%{transform:translate(-8px,5px) rotate(-0.6deg)} 40%{transform:translate(6px,-4px) rotate(0.6deg)} 60%{transform:translate(-3px,2px)} 80%{transform:translate(3px,-2px)} 100%{transform:none} }
 
-    .meta{
-      display:flex; gap:12px; margin-top:12px; align-items:center; flex-wrap:wrap;
-    }
-    .pill{
-      background:var(--glass); padding:8px 10px; border-radius:999px; font-weight:600; color:var(--accent1);
-      border:1px solid rgba(255,111,140,0.06);
-    }
+    .muted { color:var(--muted); font-size:0.9rem; margin-top:8px; display:block; }
 
-    /* Right column: log + actions */
-    .side{
-      position:relative;
-    }
-    #log{ min-height:240px; max-height:420px; overflow:auto; background:linear-gradient(180deg, #fff, rgba(255,255,255,0.98)); padding:12px; border-radius:12px; border:1px solid rgba(0,0,0,0.03); }
-    .log-entry{ margin-bottom:10px; padding:8px; border-radius:8px; background:linear-gradient(180deg,#fff,#fff); box-shadow: inset 0 -1px 0 rgba(0,0,0,0.02); }
-    .log-entry.time{ font-size:12px; color:#777; margin-bottom:6px; }
-    .log-entry .who{ font-weight:600; color:var(--accent1); margin-right:8px; }
-    .muted{ color:var(--muted); font-size:13px; }
-
-    /* Footer small text */
-    .help{ margin-top:10px; color:var(--muted); font-size:13px; }
-
-    /* Responsive */
-    @media (max-width:880px){
-      .grid{ grid-template-columns: 1fr; }
-      .side{ order:-1; margin-bottom:12px; }
+    /* small responsive tweaks */
+    @media (max-width:540px){
+      .controls-row { gap:6px; }
+      .btn-pink, .btn-ghost { padding:8px 8px; font-size:0.9rem; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div id="overlayDark"></div>
+  <canvas id="fxCanvas" class="fx" aria-hidden="true"></canvas>
+  <canvas id="rainCanvas" class="rain" aria-hidden="true"></canvas>
+
+  <div class="wrap">
     <header>
-      <h1>Nim — игра со спичками</h1>
-      <p>Игрок ходит первым. Бот играет по стратегии кратности 4. Интерфейс — розовый и современный ✨</p>
+      <div class="brand">
+        <h1>Nim — звуки & анимации</h1>
+        <p>Добавлены реальные MP3. Положите файлы в <code>www/sounds/</code> и пользуйтесь — также есть WebAudio fallback.</p>
+      </div>
+      <div style="text-align:right">
+        <div class="small-muted">Версия</div>
+        <div style="font-weight:600;color:var(--accent)">v1.2</div>
+      </div>
     </header>
 
     <div class="grid">
-      <!-- Left: Game -->
+      <!-- left: game -->
       <div class="card">
-        <div id="gameHeader">
-          <div>
-            <div style="font-size:14px; color:var(--muted)">Начальное количество</div>
-            <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
-              <input id="init" type="number" value="13" min="1" />
-              <button id="start" class="btn">Запустить</button>
-              <button id="reset" class="btn ghost" style="display:none;">Заново</button>
+        <div class="controls-row">
+          <label class="small-muted">Начальные спички</label>
+          <input id="init" type="number" value="13" min="1" />
+          <label class="small-muted">Сложность</label>
+          <select id="difficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select>
+
+          <button id="start" class="btn-pink">Запустить</button>
+          <button id="reset" class="btn-ghost" style="display:none">Заново</button>
+
+          <div style="margin-left:auto; text-align:right;">
+            <div class="small-muted">Звук</div>
+            <label style="display:flex;align-items:center;gap:6px;">
+              <input id="soundToggle" type="checkbox" checked/> <span class="small-muted">Вкл</span>
+            </label>
+          </div>
+        </div>
+
+        <hr style="margin:12px 0">
+
+        <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+          <div style="min-width:260px;">
+            <label class="small-muted">Победа (анимация)</label><br>
+            <select id="victorySelect" style="width:220px;">
+              <option value="fireworks">Fireworks</option>
+              <option value="confetti">Confetti</option>
+              <option value="neon">Neon Bloom</option>
+              <option value="all" selected>All (комбо)</option>
+            </select>
+            <button id="previewVictory" class="btn-ghost" title="Прослушать звук/предпросмотр" style="margin-left:8px">▶</button>
+          </div>
+
+          <div style="min-width:260px;">
+            <label class="small-muted">Поражение (анимация)</label><br>
+            <select id="lossSelect" style="width:220px;">
+              <option value="rain">Rain</option>
+              <option value="ashes">Ashes</option>
+              <option value="fade">FadeOut</option>
+            </select>
+            <button id="previewLoss" class="btn-ghost" title="Прослушать звук/предпросмотр" style="margin-left:8px">▶</button>
+          </div>
+
+          <div style="margin-left:auto;">
+            <label class="small-muted">Random</label><br>
+            <label style="display:flex; align-items:center; gap:8px;">
+              <input id="randomizeAnimations" type="checkbox"/> <span class="small-muted">Случайно выбирать анимацию</span>
+            </label>
+            <div style="margin-top:8px">
+              <button id="demoVictory" class="btn-ghost">Демо победы</button>
+              <button id="demoLoss" class="btn-ghost">Демо поражения</button>
             </div>
           </div>
+        </div>
 
-          <div style="text-align:right;">
-            <div style="font-size:13px; color:var(--muted);">Сейчас</div>
-            <div class="pill" id="turnPill">—</div>
+        <hr style="margin:14px 0">
+
+        <div><small class="small-muted">Поле (спички сгруппированы по 4)</small></div>
+        <div id="sticks" style="margin-top:10px"></div>
+
+        <div style="margin-top:12px; display:flex; gap:8px;">
+          <button class="btn-pink" data-take="1">Взять 1</button>
+          <button class="btn-pink" data-take="2">Взять 2</button>
+          <button class="btn-pink" data-take="3">Взять 3</button>
+          <div style="margin-left:auto; align-self:center;">
+            <span id="countBadge" style="background:#fff;padding:6px 10px;border-radius:10px;font-weight:600">Осталось: —</span>
           </div>
         </div>
 
-        <div id="sticksWrap" style="margin-top:18px;">
-          <div style="flex-basis:100%">
-            <div style="font-size:13px; color:var(--muted)">Поле (спички сгруппированы по 4)</div>
-            <div id="sticks" style="margin-top:8px;"></div>
-          </div>
-        </div>
-
-        <div class="meta">
-          <div class="pill" id="countPill">Осталось: —</div>
-          <div class="pill muted" id="rangePill">Можно взять: —</div>
-          <div style="flex:1"></div>
-        </div>
-
-        <div style="margin-top:14px;">
-          <div id="controls" class="controls-row">
-            <button class="btn" data-take="1">Взять 1</button>
-            <button class="btn" data-take="2">Взять 2</button>
-            <button class="btn" data-take="3">Взять 3</button>
-          </div>
-          <div class="help">Кнопки автоматически отключаются, если ход недоступен.</div>
-        </div>
+        <div style="margin-top:10px"><small id="rangeText" class="small-muted">Можно взять: —</small></div>
       </div>
 
-      <!-- Right: Log / Info -->
-      <div class="side">
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3 style="margin:0; font-size:16px;">Ход и лог</h3>
-            <div style="font-size:13px; color:var(--muted)">Интерактив</div>
-          </div>
-
-          <div id="log" style="margin-top:12px;"></div>
-
-          <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
-            <button id="showState" class="btn ghost">Обновить состояние</button>
-            <div style="flex:1"></div>
-            <small class="muted">Проект на SWI-Prolog</small>
-          </div>
+      <!-- right: log + settings -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="margin:0">Лог</h3>
+          <div><button id="refresh" class="btn-ghost">Обновить</button></div>
         </div>
+
+        <div id="log" style="margin-top:10px;"></div>
+
+        <div class="muted">Настройки визуала и звука вверху. API: /start, /player_move, /state</div>
       </div>
+    </div>
+  </div>
 
-    </div> <!-- grid -->
-  </div> <!-- container -->
-
+  <!-- SCRIPT: защищённый + MP3 loader + анимации + sound fallback -->
   <script>
-    // UI logic (подключается к серверу, API как раньше: /start, /player_move, /state)
-    const startBtn = document.getElementById('start');
-    const resetBtn = document.getElementById('reset');
-    const initInput = document.getElementById('init');
-    const gameDiv = document.querySelector('.card');
-    const sticksDiv = document.getElementById('sticks');
-    const infoPill = document.getElementById('turnPill');
-    const countPill = document.getElementById('countPill');
-    const rangePill = document.getElementById('rangePill');
-    const logDiv = document.getElementById('log');
-    const controls = document.getElementById('controls');
+  document.addEventListener('DOMContentLoaded', () => {
+    // ---- helpers
+    const $ = id => document.getElementById(id);
+    const escapeHtml = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const appendLog = (t, m) => {
+      const log = $('log');
+      if(!log) return console.warn('log missing', t, m);
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<div class="small text-muted">${new Date().toLocaleTimeString()} • <strong>${escapeHtml(t)}</strong></div><div>${escapeHtml(m)}</div>`;
+      log.prepend(entry);
+    };
 
-    let currentSticks = 0;
-    let currentTurn = null;
+    // ---- elements
+    const startBtn = $('start'), resetBtn = $('reset'), initIn = $('init'), diff = $('difficulty');
+    const sticksDiv = $('sticks'), countBadge = $('countBadge'), rangeText = $('rangeText');
+    const victorySelect = $('victorySelect'), lossSelect = $('lossSelect');
+    const previewVictory = $('previewVictory'), previewLoss = $('previewLoss');
+    const demoVictory = $('demoVictory'), demoLoss = $('demoLoss');
+    const randomizeBox = $('randomizeAnimations'), soundToggle = $('soundToggle');
+    const refreshBtn = $('refresh'), mainCard = document.querySelector('.card');
+    const fxCanvas = $('fxCanvas'), rainCanvas = $('rainCanvas');
+    const fxCtx = fxCanvas ? fxCanvas.getContext('2d') : null;
+    const rainCtx = rainCanvas ? rainCanvas.getContext('2d') : null;
+    const overlayDark = $('overlayDark');
 
-    function setTurn(t){
-      currentTurn = t;
-      infoPill.textContent = (t==='player')? 'Ваш ход' : (t==='bot'? 'Ход бота' : '—');
-      infoPill.style.background = (t==='player')? 'linear-gradient(90deg,#fff,#fff)' : 'linear-gradient(90deg,#fff,#fff)';
+    function resizeCanvases(){ if(fxCanvas){ fxCanvas.width = innerWidth; fxCanvas.height = innerHeight; } if(rainCanvas){ rainCanvas.width = innerWidth; rainCanvas.height = innerHeight; } }
+    window.addEventListener('resize', resizeCanvases); resizeCanvases();
+
+    // ---- audio files loader (MP3) with fallback to synth
+    const SOUND_BASE = '/sounds/';
+    const audioMap = {
+      fireworks: SOUND_BASE + 'victory_fireworks.mp3',
+      confetti:  SOUND_BASE + 'victory_confetti.mp3',
+      neon:      SOUND_BASE + 'victory_neon.mp3',
+      all:       SOUND_BASE + 'victory_all.mp3',
+      rain:      SOUND_BASE + 'loss_rain.mp3',
+      ashes:     SOUND_BASE + 'loss_ashes.mp3',
+      fade:      SOUND_BASE + 'loss_fade.mp3',
+      applause:  SOUND_BASE + 'applause.mp3'
+    };
+    const audios = {};
+    const audioReady = {};
+
+    Object.keys(audioMap).forEach(k => {
+      try {
+        const a = new Audio();
+        a.src = audioMap[k];
+        a.preload = 'auto';
+        a.volume = 0.9;
+        a.addEventListener('canplaythrough', () => { audioReady[k] = true; }, {once:true});
+        a.addEventListener('error', (e)=> { console.warn('Audio load error', k, audioMap[k], e); audioReady[k] = false; });
+        audios[k] = a;
+      } catch(e){ audioReady[k] = false; console.warn('Audio init failed', k, e); }
+    });
+
+    // WebAudio fallback synth
+    let audioCtx = null;
+    function ensureAudioCtx(){ if(audioCtx) return audioCtx; try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; } catch(e){ audioCtx = null; return null; } }
+
+    // simple synth fallback (kept compact)
+    function synthVictory(style){
+      const ctx = ensureAudioCtx(); if(!ctx) return;
+      const now = ctx.currentTime;
+      if(style === 'confetti'){
+        for(let i=0;i<12;i++){
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(600 + Math.random()*1200, now + i*0.02);
+          g.gain.setValueAtTime(0.0001, now + i*0.02);
+          g.gain.linearRampToValueAtTime(0.06, now + 0.02 + i*0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + 0.28 + i*0.02);
+          o.connect(g); g.connect(ctx.destination); o.start(now + i*0.02); o.stop(now + 0.26 + i*0.02);
+        }
+      } else if(style === 'neon'){
+        const base = ctx.createOscillator(), gb = ctx.createGain();
+        base.type='sine'; base.frequency.setValueAtTime(220, now);
+        gb.gain.setValueAtTime(0.0001, now); gb.gain.exponentialRampToValueAtTime(0.12, now + 0.04);
+        base.connect(gb); gb.connect(ctx.destination); base.start(now); base.stop(now + 1.2);
+      } else {
+        [660,880,1100].forEach((f,i)=>{
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.type = 'sine'; o.frequency.setValueAtTime(f, now + i*0.02);
+          g.gain.setValueAtTime(0, now + i*0.02); g.gain.linearRampToValueAtTime(0.12, now + 0.02 + i*0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + 1.0 + i*0.04);
+          o.connect(g); g.connect(ctx.destination); o.start(now + i*0.02); o.stop(now + 1.1 + i*0.04);
+        });
+      }
     }
 
-    function setCount(n){
-      currentSticks = n;
-      countPill.textContent = 'Осталось: ' + n;
-      const maxTake = Math.min(3, n);
-      rangePill.textContent = 'Можно взять: 1–' + maxTake;
-      // disable buttons if not allowed
-      document.querySelectorAll('#controls button').forEach(b=>{
-        const take = parseInt(b.dataset.take,10);
-        b.disabled = (take > maxTake) || (n === 0) || (currentTurn !== 'player');
-      });
+    function synthLoss(style){
+      const ctx = ensureAudioCtx(); if(!ctx) return;
+      const now = ctx.currentTime;
+      if(style === 'ashes'){
+        const sampleRate = ctx.sampleRate;
+        const buffer = ctx.createBuffer(1, sampleRate * 1.0, sampleRate);
+        const data = buffer.getChannelData(0);
+        for(let i=0;i<data.length;i++) data[i] = (Math.random()*2 - 1) * Math.exp(-i/data.length*2);
+        const src = ctx.createBufferSource(), g = ctx.createGain();
+        src.buffer = buffer; g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(0.18, now + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, now + 1.0);
+        src.connect(g); g.connect(ctx.destination); src.start(now); src.stop(now + 1.0);
+      } else {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type='sine'; o.frequency.setValueAtTime(220, now); o.frequency.exponentialRampToValueAtTime(60, now + 1.2);
+        g.gain.setValueAtTime(0.0001, now); g.gain.exponentialRampToValueAtTime(0.22, now + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now + 1.6);
+      }
     }
 
-    function appendLog(who, text){
-      const wrap = document.createElement('div');
-      wrap.className = 'log-entry';
-      const time = new Date().toLocaleTimeString();
-      wrap.innerHTML = '<div class="time">'+time+'</div><div><span class="who">'+who+':</span> <span>'+text+'</span></div>';
-      logDiv.prepend(wrap);
+    // play animation sound: try mp3 first, fallback to synth
+    async function playAnimationSound(kind, animType){
+      // kind 'victory' or 'loss', animType e.g. 'fireworks'
+      const key = (kind === 'victory') ? (animType || 'all') : (animType || 'rain');
+      if(soundToggle && !soundToggle.checked) return; // sound off
+      if(audios[key] && audioReady[key]){
+        try { audios[key].currentTime = 0; await audios[key].play(); return; } catch(err) { console.warn('Audio.play failed', key, err); }
+      }
+      // fallback synth
+      if(kind === 'victory') synthVictory(key); else synthLoss(key);
     }
 
-    function renderSticks(n, animateTakenCount=0){
-      // animateTakenCount: сколько только что убрано (для анимации)
-      // создаём группы по 4
+    // ---- animation implementations (fxCtx / rainCtx)
+    const palette = ['#ff6fa3','#ff9abf','#ffd1e8','#ff80ab','#ffd08a','#ffe07b','#9be3ff','#8ae6b8','#c4a7ff'];
+
+    function createRocket(startX){
+      if(!fxCanvas) return null;
+      let x = startX, y = fxCanvas.height + 10, vx = (Math.random()-0.5)*2, vy = -6 - Math.random()*6;
+      let targetY = Math.random()*fxCanvas.height*0.45 + fxCanvas.height*0.08;
+      let exploded=false, particles=[];
+      const color = palette[Math.floor(Math.random()*palette.length)];
+      return {
+        done:false,
+        update(){
+          if(!exploded){
+            x += vx; y += vy; vy += 0.12;
+            if(y <= targetY || vy > 0){
+              exploded = true;
+              const cnt = 20 + Math.floor(Math.random()*40);
+              for(let i=0;i<cnt;i++){
+                const ang = Math.random()*Math.PI*2; const speed = 1.6 + Math.random()*5;
+                particles.push({ x:x, y:y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, life:60+Math.random()*120, color: palette[Math.floor(Math.random()*palette.length)], size:2+Math.random()*3 });
+              }
+            }
+          } else {
+            particles.forEach(p=>{ p.vy += 0.06; p.x += p.vx; p.y += p.vy; p.life -= 1; });
+            particles = particles.filter(p=>p.life>0);
+            if(particles.length===0) this.done = true;
+          }
+        },
+        draw(ctx){
+          if(!exploded){ ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(x,y,3,6,0,0,Math.PI*2); ctx.fill(); }
+          else { particles.forEach(p=>{ ctx.globalAlpha = Math.max(0,p.life/140); ctx.fillStyle = p.color; ctx.fillRect(p.x,p.y,p.size,p.size); ctx.globalAlpha = 1; }); }
+        }
+      };
+    }
+
+    function launchFireworksPack(count = 5){
+      if(!fxCtx) return;
+      const rockets = [];
+      for(let i=0;i<count;i++) rockets.push(createRocket(Math.random()*fxCanvas.width*0.8 + fxCanvas.width*0.1));
+      let tick = 0;
+      function loop(){
+        fxCtx.clearRect(0,0,fxCanvas.width, fxCanvas.height);
+        rockets.forEach(r=> r.update());
+        rockets.forEach(r=> r.draw(fxCtx));
+        for(let i=rockets.length-1;i>=0;i--) if(rockets[i].done) rockets.splice(i,1);
+        tick++;
+        if((rockets.length>0 || tick < 200)) requestAnimationFrame(loop);
+        else fxCtx.clearRect(0,0,fxCanvas.width, fxCanvas.height);
+      }
+      loop();
+    }
+
+    function launchConfetti(cnt = 200){
+      if(!fxCtx) return;
+      const parts = [];
+      for(let i=0;i<cnt;i++){
+        parts.push({ x:fxCanvas.width/2 + (Math.random()-0.5)*300, y:fxCanvas.height*0.25 + (Math.random()-0.5)*120, vx:(Math.random()-0.5)*10, vy:(Math.random()*-6)-2, life:80+Math.random()*140, size:6+Math.random()*10, color: palette[Math.floor(Math.random()*palette.length)], shape: Math.random()<0.5?'rect':'circle' });
+      }
+      let t=0;
+      function step(){
+        fxCtx.clearRect(0,0,fxCanvas.width, fxCanvas.height);
+        parts.forEach(p=>{ p.vy += 0.22; p.x += p.vx; p.y += p.vy; p.life -= 1; fxCtx.globalAlpha = Math.max(0, p.life/160); fxCtx.fillStyle = p.color; if(p.shape==='rect') fxCtx.fillRect(p.x,p.y,p.size,p.size*0.6); else { fxCtx.beginPath(); fxCtx.ellipse(p.x,p.y,p.size/2,p.size/2,0,0,Math.PI*2); fxCtx.fill(); }});
+        for(let i=parts.length-1;i>=0;i--) if(parts[i].life<=0) parts.splice(i,1);
+        if(parts.length>0 && t < 400){ t++; requestAnimationFrame(step); } else fxCtx.clearRect(0,0,fxCanvas.width, fxCanvas.height);
+      }
+      step();
+    }
+
+    function launchNeonBloom(x = fxCanvas.width/2, y = fxCanvas.height/3, rings = 5){
+      if(!fxCtx) return;
+      const particles = [];
+      for(let r=0;r<rings;r++){
+        const count = 24 + Math.floor(Math.random()*20);
+        for(let i=0;i<count;i++){
+          const ang = Math.random()*Math.PI*2; const speed = (2 + r*0.5) + Math.random()*3;
+          particles.push({ x:x, y:y, vx: Math.cos(ang)*speed, vy: Math.sin(ang)*speed, life:60+Math.random()*100, color: palette[Math.floor(Math.random()*palette.length)], size:2+Math.random()*4, glow:12+Math.random()*20 });
+        }
+      }
+      let tt=0;
+      function step(){
+        fxCtx.clearRect(0,0,fxCanvas.width, fxCanvas.height);
+        particles.forEach(p=>{ p.vy += 0.06; p.x += p.vx; p.y += p.vy; p.life -= 1; fxCtx.globalCompositeOperation='lighter'; fxCtx.fillStyle=p.color; fxCtx.beginPath(); const gsize = p.glow * Math.max(0, p.life/140); fxCtx.ellipse(p.x,p.y,gsize,gsize*0.6,0,0,Math.PI*2); fxCtx.fill(); fxCtx.globalCompositeOperation='source-over'; });
+        for(let i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1);
+        if(particles.length>0 && tt<360){ tt++; requestAnimationFrame(step); } else fxCtx.clearRect(0,0,fxCanvas.width, fxCanvas.height);
+      }
+      step();
+    }
+
+    function launchRain(duration = 300){
+      if(!rainCtx) return;
+      overlayDark.classList.add('active'); mainCard && mainCard.classList.add('shake');
+      setTimeout(()=> mainCard && mainCard.classList.remove('shake'), 700);
+      const W = rainCanvas.width, H = rainCanvas.height;
+      const parts = [];
+      for(let i=0;i<220;i++) parts.push({ x: Math.random()*W, y: Math.random()*-H, vy:4+Math.random()*5, len:12+Math.random()*18, alpha: 0.12+Math.random()*0.2, color: (Math.random()<0.6)? 'rgba(30,10,20,0.9)' : 'rgba(70,20,40,0.9)' });
+      let t=0;
+      function step(){
+        rainCtx.clearRect(0,0,W,H); rainCtx.lineWidth = 1.8;
+        parts.forEach(p=>{ rainCtx.beginPath(); rainCtx.strokeStyle = p.color; rainCtx.globalAlpha = p.alpha; rainCtx.moveTo(p.x,p.y); rainCtx.lineTo(p.x,p.y+p.len); rainCtx.stroke(); p.y += p.vy; if(p.y > H + 30) p.y = -20 - Math.random()*H*0.6; });
+        rainCtx.globalAlpha = 1;
+        t++;
+        if(t < duration) requestAnimationFrame(step);
+        else { rainCtx.clearRect(0,0,W,H); overlayDark.classList.remove('active'); }
+      }
+      step();
+    }
+
+    function launchAshes(duration = 260){
+      if(!rainCtx) return;
+      overlayDark.classList.add('active');
+      const W = rainCanvas.width, H = rainCanvas.height;
+      const ashes = [];
+      for(let i=0;i<140;i++) ashes.push({ x: Math.random()*W, y: Math.random()*-H, vy:0.4+Math.random()*1.4, alpha:0.12+Math.random()*0.28, size:6+Math.random()*10, drift:(Math.random()-0.5)*0.4 });
+      let t=0;
+      function step(){
+        rainCtx.clearRect(0,0,W,H);
+        ashes.forEach(a=>{ rainCtx.fillStyle = 'rgba(100,50,60,'+a.alpha+')'; rainCtx.beginPath(); rainCtx.ellipse(a.x,a.y,a.size/2,a.size/2,0,0,Math.PI*2); rainCtx.fill(); a.y += a.vy; a.x += a.drift; if(a.y>H+30){ a.y = -10 - Math.random()*H*0.4; a.x = Math.random()*W; }});
+        t++;
+        if(t < duration) requestAnimationFrame(step); else { rainCtx.clearRect(0,0,W,H); overlayDark.classList.remove('active'); }
+      }
+      step();
+    }
+
+    function launchFadeOut(duration = 700){
+      overlayDark.classList.add('active');
+      document.body.style.transition = 'filter 700ms ease';
+      document.body.style.filter = 'grayscale(0.4) brightness(0.6)';
+      setTimeout(()=>{ document.body.style.filter = ''; overlayDark.classList.remove('active'); }, duration + 400);
+    }
+
+    // high-level performers with random option
+    const victoryOptions = ['fireworks','confetti','neon','all'];
+    const lossOptions = ['rain','ashes','fade'];
+    function chooseRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+    async function performVictoryAnimation(type){
+      const randomize = randomizeBox && randomizeBox.checked;
+      const t = randomize ? chooseRandom(victoryOptions) : (type || (victorySelect ? victorySelect.value : 'all'));
+      if(t === 'fireworks'){ launchFireworksPack(6); await playAnimationSound('victory', 'fireworks'); }
+      else if(t === 'confetti'){ launchConfetti(240); await playAnimationSound('victory', 'confetti'); }
+      else if(t === 'neon'){ launchNeonBloom(fxCanvas.width/2, fxCanvas.height/3, 6); await playAnimationSound('victory', 'neon'); }
+      else { launchFireworksPack(6); setTimeout(()=>launchConfetti(260), 180); setTimeout(()=>launchNeonBloom(fxCanvas.width/2, fxCanvas.height*0.28, 6), 350); await playAnimationSound('victory', 'all'); }
+    }
+
+    async function performLossAnimation(type){
+      const randomize = randomizeBox && randomizeBox.checked;
+      const t = randomize ? chooseRandom(lossOptions) : (type || (lossSelect ? lossSelect.value : 'rain'));
+      if(t === 'rain'){ launchRain(320); await playAnimationSound('loss','rain'); }
+      else if(t === 'ashes'){ launchAshes(260); await playAnimationSound('loss','ashes'); }
+      else { launchFadeOut(700); await playAnimationSound('loss','fade'); }
+      mainCard && mainCard.classList.add('shake'); setTimeout(()=> mainCard && mainCard.classList.remove('shake'), 700);
+    }
+
+    // expose globally for fallback-safe code
+    window.performVictoryAnimation = performVictoryAnimation;
+    window.performLossAnimation = performLossAnimation;
+
+    // preview/demo handlers
+    previewVictory && previewVictory.addEventListener('click', ()=> { const v = victorySelect ? victorySelect.value : 'all'; performVictoryAnimation(v); appendLog('Система','Прослушать поб. анимацию: ' + v); });
+    previewLoss && previewLoss.addEventListener('click', ()=> { const l = lossSelect ? lossSelect.value : 'rain'; performLossAnimation(l); appendLog('Система','Прослушать пораж. анимацию: ' + l); });
+    demoVictory && demoVictory.addEventListener('click', ()=> { performVictoryAnimation(); appendLog('Система','Демо победы'); });
+    demoLoss && demoLoss.addEventListener('click', ()=> { performLossAnimation(); appendLog('Система','Демо поражения'); });
+
+    // ---- game UI & networking (safe) ----
+    let currentSticks = 0, currentTurn = null;
+
+    function renderSticks(n){
+      if(!sticksDiv) return;
       sticksDiv.innerHTML = '';
       let rem = n;
-      let index = 0;
-      while (rem > 0){
-        const group = document.createElement('div');
-        group.className = 'group';
+      while(rem>0){
+        const group = document.createElement('div'); group.className='group';
         const inGroup = Math.min(4, rem);
-        for (let i=0;i<inGroup;i++){
-          const bar = document.createElement('div');
-          bar.className = 'bar';
-          // если нужно анимировать последние taken
-          if (animateTakenCount>0 && index < animateTakenCount){
-            // mark as removed: add class after a microtask so transition occurs
-            setTimeout(()=> bar.classList.add('removed'), 40 + (index*40));
-            index++;
-          }
-          group.appendChild(bar);
-        }
+        for(let i=0;i<inGroup;i++){ const b = document.createElement('div'); b.className='bar'; group.appendChild(b); }
         sticksDiv.appendChild(group);
         rem -= inGroup;
       }
-      if (n===0) sticksDiv.textContent = '[пусто]';
+      if(n===0) sticksDiv.textContent = '[пусто]';
     }
 
-    startBtn.onclick = async () => {
-      const sticks = Math.max(1, parseInt(initInput.value) || 13);
+    function setState(n, turn){
+      currentSticks = n; currentTurn = turn;
+      if(countBadge) countBadge.textContent = 'Осталось: ' + n;
+      if(rangeText) rangeText.textContent = 'Можно взять: 1–' + Math.min(3, n);
+      document.querySelectorAll('[data-take]').forEach(b=>{ if(!b) return; const t = parseInt(b.dataset.take,10); b.disabled = (t > Math.min(3,n)) || (n===0) || (turn !== 'player'); });
+    }
+
+    function animateRemove(oldCount, newCount){
+      if(!sticksDiv) return Promise.resolve();
+      const removed = Math.max(0, oldCount - newCount);
+      if(removed <= 0) return Promise.resolve();
+      const bars = Array.from(sticksDiv.querySelectorAll('.group .bar'));
+      const toRemove = bars.slice(-removed);
+      return new Promise(resolve=>{
+        toRemove.forEach((b,i)=> setTimeout(()=> b.classList.add('removed'), i*70));
+        setTimeout(()=> { renderSticks(newCount); resolve(); }, 420 + (toRemove.length-1)*70 + 40);
+      });
+    }
+
+    async function postJson(path, body){
+      try {
+        const resp = await fetch(path, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+        const j = await resp.json();
+        return j;
+      } catch(err) {
+        appendLog('Система', 'Ошибка сети: ' + (err && err.message ? err.message : String(err)));
+        return { ok:false, error: String(err) };
+      }
+    }
+
+    // start/reset
+    startBtn && startBtn.addEventListener('click', async ()=>{
+      const sticks = Math.max(1, parseInt(initIn.value) || 13);
+      const difficulty = diff ? diff.value : 'hard';
       startBtn.disabled = true;
-      appendLog('Система','Запуск игры с ' + sticks + ' спичками...');
-      try{
-        const res = await fetch('/start', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({sticks})
-        });
-        const json = await res.json();
-        if (!json.ok) { appendLog('Система','Ошибка старта: ' + (json.error||'unknown')); startBtn.disabled=false; return; }
-        renderSticks(json.sticks);
-        setCount(json.sticks);
-        setTurn(json.turn);
-        appendLog('Система','Игра запущена. Ваш ход.');
-        startBtn.style.display='none';
-        resetBtn.style.display='inline-block';
-      }catch(e){
-        appendLog('Система','Ошибка сети: ' + e.message);
-        startBtn.disabled=false;
-      }
-    };
-
-    resetBtn.onclick = () => {
-      // простая перезагрузка интерфейса
-      window.location.reload();
-    };
-
-    document.getElementById('controls').addEventListener('click', async (ev)=>{
-      const btn = ev.target.closest('button[data-take]');
-      if (!btn) return;
-      const take = parseInt(btn.dataset.take,10);
-      if (currentTurn !== 'player') { appendLog('Система','Сейчас не ваш ход.'); return; }
-      // блокируем кнопки на время запроса
-      document.querySelectorAll('#controls button').forEach(b=>b.disabled=true);
-      appendLog('Игрок','Берёт ' + take);
-      try{
-        const res = await fetch('/player_move', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({take})
-        });
-        const j = await res.json();
-        if (!j.ok) {
-          appendLog('Система','Ошибка: ' + (j.error||'unknown'));
-          setCount(currentSticks);
-          return;
-        }
-
-        if (j.winner === 'player'){
-          renderSticks(0, take); // animate taken
-          setCount(0);
-          setTurn(null);
-          appendLog('Игрок','Вы выиграли! Поздравляю 🎉');
-          return;
-        }
-
-        // иначе бот отыграл или обновил состояние
-        // j contains sticks (new), playerMove, botMove, botExplanation
-        renderSticks(j.sticks);
-        const botMove = j.botMove;
-        const botExp = j.botExplanation || '';
-        appendLog('Бот','Берёт ' + botMove + (botExp? '. ' + botExp : ''));
-        setCount(j.sticks);
-
-        if (j.winner === 'bot'){
-          setTurn(null);
-          appendLog('Система','Бот выиграл. Попробуйте снова.');
-          return;
-        }
-
-        // если игра не закончена — пользовать ходит
-        setTurn('player');
-      }catch(err){
-        appendLog('Система','Сетевая ошибка: ' + err.message);
-      } finally {
-        // включаем/выключаем кнопки по состоянию
-        setCount(currentSticks);
-      }
+      appendLog('Система','Запуск: ' + sticks + ' спичек, уровень ' + difficulty);
+      const j = await postJson('/start', { sticks, difficulty });
+      if(!j.ok){ appendLog('Система','Ошибка: ' + (j.error || 'unknown')); startBtn.disabled = false; return; }
+      renderSticks(j.sticks || 0); setState(j.sticks || 0, j.turn); appendLog('Система','Игра готова. Ваш ход.');
+      startBtn.style.display = 'none'; resetBtn && (resetBtn.style.display='inline-block');
     });
 
-    document.getElementById('showState').addEventListener('click', async ()=>{
-      try{
-        const r = await fetch('/state');
-        const j = await r.json();
-        if (!j.ok) { appendLog('Система','Игра не запущена'); return; }
-        renderSticks(j.sticks);
-        setCount(j.sticks);
-        setTurn(j.turn);
-        appendLog('Система','Состояние обновлено');
-      }catch(e){ appendLog('Система','Ошибка: ' + e.message); }
+    resetBtn && resetBtn.addEventListener('click', ()=> location.reload());
+
+    document.querySelectorAll('[data-take]').forEach(btn=>{
+      if(!btn) return;
+      btn.addEventListener('click', async ()=>{
+        const take = parseInt(btn.dataset.take,10);
+        if(currentTurn !== 'player'){ appendLog('Система','Сейчас не ваш ход.'); return; }
+        appendLog('Игрок','Берёт ' + take);
+        const before = currentSticks;
+        const j = await postJson('/player_move', { take });
+        if(!j.ok){ appendLog('Система','Ошибка: ' + (j.error || 'unknown')); setState(before,'player'); return; }
+        if(j.winner === 'player'){ await animateRemove(before,0); setState(0,null); appendLog('Игрок','Вы выиграли! 🎉'); performVictoryAnimation(); return; }
+        const afterPlayer = before - take;
+        await animateRemove(before, afterPlayer);
+        appendLog('Бот','Берёт ' + j.botMove + '. ' + (j.botExplanation || ''));
+        const after = j.sticks || 0;
+        await animateRemove(afterPlayer, after); setState(after,'player');
+        if(j.winner === 'bot'){ appendLog('Система','Бот выиграл. Вы проиграли.'); performLossAnimation(); }
+      });
     });
 
-    // initial UI
-    renderSticks(0);
-    setCount(0);
-    setTurn(null);
-    appendLog('Система','Готово. Нажмите «Запустить», чтобы начать.');
+    refreshBtn && refreshBtn.addEventListener('click', async ()=>{
+      try { const r = await fetch('/state'); const j = await r.json(); if(!j.ok){ appendLog('Система','Игра не запущена'); return; } renderSticks(j.sticks || 0); setState(j.sticks || 0, j.turn); appendLog('Система','Состояние обновлено'); } catch(e){ appendLog('Система','Ошибка: ' + (e && e.message ? e.message : String(e))); }
+    });
+
+    // initial
+    renderSticks(0); setState(0,null); appendLog('Система','Готово. Выберите уровень и нажмите Запустить.');
+
+    // global error handler (so exceptions are visible in log)
+    window.addEventListener('error', ev => { appendLog('JS Error', ev && ev.message ? ev.message : String(ev)); console.error(ev); });
+
+    // Expose playAnimationSound globally for other scripts if needed
+    window.playAnimationSound = playAnimationSound;
+  });
   </script>
+
+  <!-- bootstrap bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

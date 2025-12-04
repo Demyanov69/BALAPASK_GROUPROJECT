@@ -1,5 +1,9 @@
 % server.pl
-% Простой HTTP сервер на SWI-Prolog для веб-интерфейса игры Nim
+% Исправленный HTTP сервер для Nim (SWI-Prolog).
+% Поддерживает старт игры с выбором сложности: easy, medium, hard.
+% Подразумевается, что utils.pl и bot.pl лежат в той же папке.
+:- encoding(utf8).
+:- set_prolog_flag(encoding, utf8).
 
 :- use_module(library(http/thread_httpd)).
 :- use_module(library(http/http_dispatch)).
@@ -7,100 +11,112 @@
 :- use_module(library(http/http_json)).
 :- use_module(library(http/http_parameters)).
 
-% Сначала загружаем локальные файлы (ensure_loaded надёжнее, чем use_module без пути)
+% Загружаем локальные файлы (ensure_loaded гарантирует порядок загрузки)
 :- ensure_loaded('utils.pl').
 :- ensure_loaded('bot.pl').
 
-% динамическое состояние игры: game_state(Sticks, Turn).
-:- dynamic game_state/2.
+% Динамическое состояние игры: game_state(Sticks, Turn, Difficulty).
+:- dynamic game_state/3.
 
-% регистрация маршрутов: статические файлы + API
-% Сначала API, затем статические файлы (prefix) — чтобы API-пути перехватывались корректно.
+% Роуты API
 :- http_handler(root('start'), start_handler, []).
 :- http_handler(root('player_move'), player_move_handler, []).
 :- http_handler(root('state'), state_handler, []).
-% сервируем каталог ./www при всех остальных запросах
-% используем собственный обработчик файлов:
+% Все остальные запросы обслуживаем как статические файлы из ./www
 :- http_handler(root(.), static_handler, [prefix]).
 
-% static_handler(+Request)
-% отдаёт файл из каталога ./www; если путь пустой — отдает index.html
-static_handler(Request) :-
-    % извлекаем path_info, если нет — считаем пустым
-    ( memberchk(path_info(PathInfo), Request) -> true ; PathInfo = '' ),
-    % path_info может начинаться с '/', уберём ведущий '/':
-    ( PathInfo = '/' -> Clean = '' ;
-      ( sub_atom(PathInfo, 0, 1, _, '/') -> sub_atom(PathInfo, 1, _, 0, Clean) ; Clean = PathInfo ) ),
-    ( Clean = '' -> File = 'www/index.html'
-    ; atom_concat('www/', Clean, File)
-    ),
-    % если файл существует — отдать, иначе вернуть 404
-    ( exists_file(File) ->
-        http_reply_file(File, [], Request)
-    ;
-        % отдаём 404 (можно заменить на кастомную страницу)
-        format(string(Msg), 'Файл не найден: ~w', [File]),
-        reply_html_page(title('404 Not Found'),
-                        h1('404 Not Found'),
-                        p(Msg)),
-        % или: throw(http_reply(status(404, 'Not found')))
-        !
-    ).
-
+% -----------------------
 % Запуск сервера
+% -----------------------
 start_server(Port) :-
     http_server(http_dispatch, [port(Port)]),
     format('Server started at http://localhost:~w~n', [Port]).
 
-% /start  POST {sticks: N}
-start_handler(Request) :-
-    http_read_json_dict(Request, DictIn),
-    ( _{sticks:Sticks} :< DictIn, integer(Sticks), Sticks > 0 ->
-        retractall(game_state(_,_)),
-        assertz(game_state(Sticks, player)),
-        reply_json_dict(_{ok:true, sticks:Sticks, turn:player})
+% -----------------------
+% Статический обработчик файлов
+% -----------------------
+static_handler(Request) :-
+    ( memberchk(path_info(PathInfo), Request) -> true ; PathInfo = '' ),
+    ( PathInfo = '/' -> Clean = '' ;
+      ( sub_atom(PathInfo, 0, 1, _, '/') -> sub_atom(PathInfo, 1, _, 0, Clean) ; Clean = PathInfo ) ),
+    ( Clean = '' -> File = 'www/index.html' ; atom_concat('www/', Clean, File) ),
+    ( exists_file(File) ->
+        http_reply_file(File, [], Request)
     ;
-        reply_json_dict(_{ok:false, error:'Неверные данные. Ожидается {\"sticks\": positive_integer}'})
+        reply_json_dict(_{ok:false, error: 'File not found', file: File})
     ).
 
-% /state GET -> текущие данные игры
+% -----------------------
+% /start  POST {sticks: N, difficulty: "easy"|"medium"|"hard"}
+% -----------------------
+start_handler(Request) :-
+    http_read_json_dict(Request, DictIn),
+    % Проверяем поле sticks
+    ( get_dict(sticks, DictIn, St0), integer(St0), St0 > 0 ->
+        Sticks = St0
+    ; reply_json_dict(_{ok:false, error:'Поле sticks обязателен и должно быть положительным целым'}), !
+    ),
+    % Проверяем необязательное поле difficulty
+    ( get_dict(difficulty, DictIn, DiffIn) ->
+        normalize_difficulty(DiffIn, Diff)
+    ; Diff = hard
+    ),
+    retractall(game_state(_,_,_)),
+    assertz(game_state(Sticks, player, Diff)),
+    reply_json_dict(_{ok:true, sticks:Sticks, turn:player, difficulty:Diff}).
+
+% normalize_difficulty(+Raw, -Atom) - приводим к одному из easy|medium|hard
+normalize_difficulty(Raw, Diff) :-
+    ( string(Raw) -> atom_string(A, Raw) ; A = Raw ),
+    downcase_atom(A, Lower),
+    ( member(Lower, [easy, medium, hard]) -> Diff = Lower ; Diff = hard ).
+
+% -----------------------
+% /state GET - вернуть текущее состояние
+% -----------------------
 state_handler(_Request) :-
-    ( game_state(Sticks, Turn) ->
-        reply_json_dict(_{ok:true, sticks:Sticks, turn:Turn})
+    ( game_state(Sticks, Turn, Difficulty) ->
+        reply_json_dict(_{ok:true, sticks:Sticks, turn:Turn, difficulty:Difficulty})
     ;
         reply_json_dict(_{ok:false, error:'Игра не запущена'})
     ).
 
+% -----------------------
 % /player_move POST {take: K}
+% -----------------------
 player_move_handler(Request) :-
     http_read_json_dict(Request, DictIn),
-    ( _{take:Take} :< DictIn, integer(Take), Take >= 1 ->
-        ( game_state(Sticks, player) ->
-            MaxTake is min(3, Sticks),
-            ( Take >=1, Take =< MaxTake ->
-                New1 is Sticks - Take,
-                ( New1 =:= 0 ->
-                    retractall(game_state(_,_)),
-                    reply_json_dict(_{ok:true, sticks:0, playerMove:Take, botMove:null, winner:player, message:'Игрок выиграл!'}) 
-                ;
-                    % ход бота
-                    bot_move(New1, BotMove, BotExp),
-                    New2 is New1 - BotMove,
-                    ( New2 =:= 0 ->
-                        retractall(game_state(_,_)),
-                        reply_json_dict(_{ok:true, sticks:0, playerMove:Take, botMove:BotMove, botExplanation:BotExp, winner:bot, message:'Бот выиграл!'}) 
-                    ;
-                        retractall(game_state(_,_)),
-                        assertz(game_state(New2, player)),
-                        reply_json_dict(_{ok:true, sticks:New2, playerMove:Take, botMove:BotMove, botExplanation:BotExp, winner:null})
-                    )
-                )
+    ( get_dict(take, DictIn, Take), integer(Take), Take >= 1 ->
+        true
+    ; reply_json_dict(_{ok:false, error:'Неверный формат тела запроса. Ожидается {\"take\": integer >= 1}'}), !
+    ),
+    ( game_state(Sticks, player, Difficulty) ->
+        MaxTake is min(3, Sticks),
+        ( Take >= 1, Take =< MaxTake ->
+            AfterPlayer is Sticks - Take,
+            ( AfterPlayer =:= 0 ->
+                retractall(game_state(_,_,_)),
+                reply_json_dict(_{ok:true, sticks:0, playerMove:Take, botMove:null, winner:player, message:'Игрок выиграл!'})
             ;
-                reply_json_dict(_{ok:false, error:'Недопустимый ход (вне допустимого диапазона)'})
+                % Ход бота в зависимости от уровня сложности
+                bot_move_level(AfterPlayer, Difficulty, BotMove, BotExp),
+                AfterBot is AfterPlayer - BotMove,
+                ( AfterBot =:= 0 ->
+                    retractall(game_state(_,_,_)),
+                    reply_json_dict(_{ok:true, sticks:0, playerMove:Take, botMove:BotMove, botExplanation:BotExp, winner:bot, message:'Бот выиграл!'})
+                ;
+                    retractall(game_state(_,_,_)),
+                    assertz(game_state(AfterBot, player, Difficulty)),
+                    reply_json_dict(_{ok:true, sticks:AfterBot, playerMove:Take, botMove:BotMove, botExplanation:BotExp, winner:null, difficulty:Difficulty})
+                )
             )
         ;
-            reply_json_dict(_{ok:false, error:'Не ваша очередь или игра не запущена'})
+            reply_json_dict(_{ok:false, error:'Недопустимый ход (вне допустимого диапазона или больше оставшихся спичек)'})
         )
     ;
-        reply_json_dict(_{ok:false, error:'Неверный формат тела запроса. Ожидается {\"take\": integer}'})
+        reply_json_dict(_{ok:false, error:'Не ваша очередь или игра не запущена'})
     ).
+
+% -----------------------
+% Конец файла
+% -----------------------
