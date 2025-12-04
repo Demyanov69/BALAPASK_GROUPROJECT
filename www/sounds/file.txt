@@ -1,0 +1,471 @@
+victory_fireworks.mp3 — звук для fireworks
+victory_confetti.mp3 — звук для confetti
+victory_neon.mp3 — звук для neon
+victory_all.mp3 (опционально) — комбинированный звук для all
+loss_rain.mp3 — звук для rain
+loss_ashes.mp3 — звук для ashes
+loss_fade.mp3 — звук для fade
+applause.mp3 (опционально, для особо яркой победы)
+
+
+//
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Nim — звуки и дизайн</title>
+
+  <!-- Google font (optional) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg1:#fff7fb; --bg2:#ffeef6;
+      --card:#ffffff;
+      --accent:#ff6fa3;
+      --accent-2:#ff9abf;
+      --muted:#6b6b6b;
+      --glass: rgba(255,255,255,0.6);
+      --shadow: 0 8px 30px rgba(213,78,131,0.08);
+    }
+    html,body{height:100%; margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+    body{
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(255,140,186,0.08), transparent),
+                  linear-gradient(180deg,var(--bg1),var(--bg2));
+      color:#222;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    .wrap{max-width:1100px; margin:28px auto; padding:20px;}
+    header{display:flex; gap:16px; align-items:center; margin-bottom:16px;}
+    header .brand{flex:1;}
+    header h1{margin:0; font-size:1.4rem; color: #6b0f4a;}
+    header p{margin:4px 0 0; color:var(--muted); font-size:0.95rem;}
+
+    .grid{display:grid; grid-template-columns: 1fr 420px; gap:18px;}
+    @media (max-width:980px){ .grid{grid-template-columns:1fr;} }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.92));
+      border-radius:14px; padding:18px; box-shadow:var(--shadow); border:1px solid rgba(255,111,140,0.06);
+    }
+
+    .controls-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    input[type="number"], select{padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.06); font-size:0.95rem;}
+    .btn-pink{background:linear-gradient(180deg,var(--accent-2),var(--accent)); color:#fff; border:none; padding:8px 12px; border-radius:10px; font-weight:600; cursor:pointer;}
+    .btn-ghost{background:transparent; border:1px solid rgba(0,0,0,0.06); padding:8px 12px; border-radius:10px; cursor:pointer;}
+    .small-muted{color:var(--muted); font-size:0.9rem;}
+
+    /* sticks */
+    #sticks{margin-top:8px; display:flex; flex-wrap:wrap; gap:8px;}
+    .group{display:inline-flex; gap:6px; padding:8px; border-radius:12px; background:rgba(255,255,255,0.92); align-items:center; transition:transform .18s;}
+    .bar{width:18px;height:18px;border-radius:6px;background:linear-gradient(180deg,#ffb7d2,#ff80ab); box-shadow: 0 6px 16px rgba(255,111,140,0.12); transition: transform .45s, opacity .35s;}
+    .bar.removed{ transform: translateY(30px) scale(.5) rotate(10deg); opacity:0; }
+
+    /* log */
+    #log{max-height:480px; overflow:auto; padding:10px; border-radius:10px; background:linear-gradient(180deg,#fff,#fff); border:1px solid rgba(0,0,0,0.03);}
+    .log-entry{padding:8px; border-radius:8px; margin-bottom:10px; background:linear-gradient(180deg,#fff,#fff); box-shadow:inset 0 -1px 0 rgba(0,0,0,0.02);}
+
+    /* canvases & overlays */
+    #overlayDark{position:fixed; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:9996; transition:background .45s;}
+    #overlayDark.active{ background: rgba(0,0,0,0.36); }
+    canvas.fx, canvas.rain{ position:fixed; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:9997; }
+    .shake{ animation: screenShake .65s ease; }
+    @keyframes screenShake { 0%{transform:none} 20%{transform:translate(-8px,5px) rotate(-0.6deg)} 40%{transform:translate(6px,-4px) rotate(0.6deg)} 60%{transform:translate(-3px,2px)} 80%{transform:translate(3px,-2px)} 100%{transform:none} }
+
+    /* footer small */
+    .muted { color:var(--muted); font-size:0.9rem; margin-top:8px; display:block; }
+
+  </style>
+</head>
+<body>
+  <div id="overlayDark"></div>
+  <canvas id="fxCanvas" class="fx" aria-hidden="true"></canvas>
+  <canvas id="rainCanvas" class="rain" aria-hidden="true"></canvas>
+
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>Nim — звуки & анимации</h1>
+        <p>Выбирайте стиль анимации и отдельный звук для каждого эффекта. Можно включить «случайный выбор».</p>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:0.9rem;color:var(--muted)">Версия</div>
+        <div style="font-weight:600;color:var(--accent)">v1.2</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- left: game -->
+      <div class="card">
+        <div class="controls-row">
+          <label class="small-muted">Начальные спички</label>
+          <input id="init" type="number" value="13" min="1" />
+          <label class="small-muted">Сложность</label>
+          <select id="difficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select>
+
+          <button id="start" class="btn-pink">Запустить</button>
+          <button id="reset" class="btn-ghost" style="display:none">Заново</button>
+
+          <div style="margin-left:auto; text-align:right;">
+            <div class="small-muted">Звук</div>
+            <label style="display:flex;align-items:center;gap:6px;">
+              <input id="soundToggle" type="checkbox" checked/> <span class="small-muted">Вкл</span>
+            </label>
+          </div>
+        </div>
+
+        <hr style="margin:12px 0">
+
+        <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+          <div style="min-width:260px;">
+            <label class="small-muted">Победа (анимация)</label><br>
+            <select id="victorySelect" style="width:220px;">
+              <option value="fireworks">Fireworks</option>
+              <option value="confetti">Confetti</option>
+              <option value="neon">Neon Bloom</option>
+              <option value="all" selected>All (комбо)</option>
+            </select>
+            <button id="previewVictory" class="btn-ghost" title="Прослушать звук/предпросмотр" style="margin-left:8px">▶</button>
+          </div>
+
+          <div style="min-width:260px;">
+            <label class="small-muted">Поражение (анимация)</label><br>
+            <select id="lossSelect" style="width:220px;">
+              <option value="rain">Rain</option>
+              <option value="ashes">Ashes</option>
+              <option value="fade">FadeOut</option>
+            </select>
+            <button id="previewLoss" class="btn-ghost" title="Прослушать звук/предпросмотр" style="margin-left:8px">▶</button>
+          </div>
+
+          <div style="margin-left:auto;">
+            <label class="small-muted">Random</label><br>
+            <label style="display:flex; align-items:center; gap:8px;">
+              <input id="randomizeAnimations" type="checkbox"/> <span class="small-muted">Случайно выбирать анимацию</span>
+            </label>
+            <div style="margin-top:8px">
+              <button id="demoVictory" class="btn-ghost">Демо победы</button>
+              <button id="demoLoss" class="btn-ghost">Демо поражения</button>
+            </div>
+          </div>
+        </div>
+
+        <hr style="margin:14px 0">
+
+        <div><small class="small-muted">Поле (спички сгруппированы по 4)</small></div>
+        <div id="sticks" style="margin-top:10px"></div>
+
+        <div style="margin-top:12px; display:flex; gap:8px;">
+          <button class="btn-pink" data-take="1">Взять 1</button>
+          <button class="btn-pink" data-take="2">Взять 2</button>
+          <button class="btn-pink" data-take="3">Взять 3</button>
+          <div style="margin-left:auto; align-self:center;">
+            <span id="countBadge" style="background:#fff;padding:6px 10px;border-radius:10px;font-weight:600">Осталось: —</span>
+          </div>
+        </div>
+
+        <div style="margin-top:10px"><small id="rangeText" class="small-muted">Можно взять: —</small></div>
+      </div>
+
+      <!-- right: log + settings -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="margin:0">Лог</h3>
+          <div><button id="refresh" class="btn-ghost">Обновить</button></div>
+        </div>
+
+        <div id="log" style="margin-top:10px;"></div>
+
+        <div class="muted">Настройки визуала и звука вверху. API: /start, /player_move, /state</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT: защищённый + звуки + анимации -->
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+
+    // ---- helpers
+    const $ = id => document.getElementById(id);
+    const escapeHtml = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const appendLog = (t, m) => {
+      const log = $('log');
+      if(!log) return console.warn('log missing', t, m);
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<div class="small text-muted">${new Date().toLocaleTimeString()} • <strong>${escapeHtml(t)}</strong></div><div>${escapeHtml(m)}</div>`;
+      log.prepend(entry);
+    };
+
+    // Elements
+    const startBtn = $('start'), resetBtn = $('reset'), initIn = $('init'), diff = $('difficulty');
+    const sticksDiv = $('sticks'), countBadge = $('countBadge'), rangeText = $('rangeText');
+    const victorySelect = $('victorySelect'), lossSelect = $('lossSelect');
+    const previewVictory = $('previewVictory'), previewLoss = $('previewLoss');
+    const demoVictory = $('demoVictory'), demoLoss = $('demoLoss');
+    const randomizeBox = $('randomizeAnimations'), soundToggle = $('soundToggle');
+    const refreshBtn = $('refresh'), mainCard = document.querySelector('.card');
+
+    // canvases
+    const fxCanvas = $('fxCanvas'), rainCanvas = $('rainCanvas');
+    const fxCtx = fxCanvas ? fxCanvas.getContext('2d') : null;
+    const rainCtx = rainCanvas ? rainCanvas.getContext('2d') : null;
+    const overlayDark = $('overlayDark');
+
+    function resizeCanvases(){ if(fxCanvas){ fxCanvas.width = innerWidth; fxCanvas.height = innerHeight; } if(rainCanvas){ rainCanvas.width = innerWidth; rainCanvas.height = innerHeight; } }
+    window.addEventListener('resize', resizeCanvases); resizeCanvases();
+
+    // state
+    let currentSticks = 0, currentTurn = null;
+    let audioCtx = null;
+
+    function ensureAudio(){ if(!soundToggle || !soundToggle.checked) return null; if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+    // ---- Sound presets mapped to animation types
+    // playVictorySound(type): type in {fireworks, confetti, neon, all}
+    function playVictorySound(type){
+      const ctx = ensureAudio(); if(!ctx) return;
+      const now = ctx.currentTime;
+      if(type==='fireworks'){
+        // bright chord + small explosive pops
+        [660,880,1100].forEach((f,i)=>{
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.type='sine'; o.frequency.setValueAtTime(f, now + i*0.02);
+          g.gain.setValueAtTime(0, now + i*0.02); g.gain.linearRampToValueAtTime(0.14, now + 0.02 + i*0.02); g.gain.exponentialRampToValueAtTime(0.0001, now + 1.1 + i*0.04);
+          o.connect(g); g.connect(ctx.destination); o.start(now + i*0.02); o.stop(now + 1.1 + i*0.04);
+        });
+        // percussive burst
+        const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+        o2.type='square'; o2.frequency.setValueAtTime(160, now);
+        g2.gain.setValueAtTime(0.001, now); g2.gain.exponentialRampToValueAtTime(0.28, now + 0.012); g2.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+        o2.connect(g2); g2.connect(ctx.destination); o2.start(now); o2.stop(now+0.22);
+      } else if(type==='confetti'){
+        // a lot of small plinks
+        for(let i=0;i<12;i++){
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.type='triangle'; o.frequency.setValueAtTime(880 + Math.random()*1200, now + i*0.03);
+          g.gain.setValueAtTime(0.0001, now + i*0.03); g.gain.linearRampToValueAtTime(0.08, now + 0.02 + i*0.03); g.gain.exponentialRampToValueAtTime(0.0001, now + 0.22 + i*0.03);
+          o.connect(g); g.connect(ctx.destination); o.start(now + i*0.03); o.stop(now + 0.26 + i*0.03);
+        }
+      } else if(type==='neon'){
+        // shimmering pads + upward sweep
+        const base = ctx.createOscillator(), g = ctx.createGain();
+        base.type='sine'; base.frequency.setValueAtTime(220, now);
+        g.gain.setValueAtTime(0.0001, now); g.gain.exponentialRampToValueAtTime(0.12, now + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+        base.connect(g); g.connect(ctx.destination); base.start(now); base.stop(now + 1.2);
+
+        const sweep = ctx.createOscillator(), gs = ctx.createGain();
+        sweep.type='sawtooth'; sweep.frequency.setValueAtTime(440, now); sweep.frequency.exponentialRampToValueAtTime(1320, now + 0.9);
+        gs.gain.setValueAtTime(0.0001, now); gs.gain.linearRampToValueAtTime(0.09, now+0.02); gs.gain.exponentialRampToValueAtTime(0.0001, now+1.1);
+        sweep.connect(gs); gs.connect(ctx.destination); sweep.start(now); sweep.stop(now + 1.1);
+      } else {
+        // all: layered
+        playVictorySound('fireworks'); setTimeout(()=>playVictorySound('confetti'), 80); setTimeout(()=>playVictorySound('neon'), 200);
+      }
+    }
+
+    // playLossSound(type): type in {rain, ashes, fade}
+    function playLossSound(type){
+      const ctx = ensureAudio(); if(!ctx) return;
+      const now = ctx.currentTime;
+      if(type==='rain'){
+        // ambient descending with soft pings
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type='sine'; o.frequency.setValueAtTime(220, now); o.frequency.exponentialRampToValueAtTime(80, now+1.6);
+        g.gain.setValueAtTime(0.0001, now); g.gain.exponentialRampToValueAtTime(0.22, now+0.02); g.gain.exponentialRampToValueAtTime(0.0001, now+1.8);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+1.8);
+        // small high ping
+        const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+        o2.type='triangle'; o2.frequency.setValueAtTime(1200, now+0.08);
+        g2.gain.setValueAtTime(0.0001, now); g2.gain.exponentialRampToValueAtTime(0.06, now+0.06); g2.gain.exponentialRampToValueAtTime(0.0001, now+0.44);
+        o2.connect(g2); g2.connect(ctx.destination); o2.start(now); o2.stop(now+0.44);
+      } else if(type==='ashes'){
+        // low crackle: noise via ScriptProcessor replacement (short)
+        const sampleRate = ctx.sampleRate;
+        const buffer = ctx.createBuffer(1, sampleRate*1.2, sampleRate);
+        const data = buffer.getChannelData(0);
+        for(let i=0;i<data.length;i++){ data[i] = (Math.random()*2-1) * Math.exp(-i/data.length*2); }
+        const src = ctx.createBufferSource(); src.buffer = buffer;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(0.18, now+0.02); g.gain.exponentialRampToValueAtTime(0.0001, now+1.1);
+        src.connect(g); g.connect(ctx.destination); src.start(now); src.stop(now+1.1);
+      } else {
+        // fade: single descending tone
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type='sine'; o.frequency.setValueAtTime(440, now); o.frequency.exponentialRampToValueAtTime(120, now+1.2);
+        g.gain.setValueAtTime(0.0001, now); g.gain.exponentialRampToValueAtTime(0.28, now+0.03); g.gain.exponentialRampToValueAtTime(0.0001, now+1.6);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+1.6);
+      }
+    }
+
+    // ---- simple UI state & rendering
+    function renderSticks(n){
+      if(!sticksDiv) return;
+      sticksDiv.innerHTML = '';
+      let rem = n;
+      while(rem>0){
+        const group = document.createElement('div'); group.className='group';
+        const inGroup = Math.min(4, rem);
+        for(let i=0;i<inGroup;i++){ const b = document.createElement('div'); b.className='bar'; group.appendChild(b); }
+        sticksDiv.appendChild(group);
+        rem -= inGroup;
+      }
+      if(n===0) sticksDiv.textContent = '[пусто]';
+    }
+    function setState(n, turn){
+      currentSticks = n; currentTurn = turn;
+      if(countBadge) countBadge.textContent = 'Осталось: ' + n;
+      if(rangeText) rangeText.textContent = 'Можно взять: 1–' + Math.min(3, n);
+      if($('.')!==null){} // no-op to avoid lint
+      document.querySelectorAll('[data-take]').forEach(b=>{
+        if(!b) return;
+        const t = parseInt(b.dataset.take,10);
+        b.disabled = (t > Math.min(3,n)) || (n===0) || (turn!=='player');
+      });
+    }
+
+    function animateRemove(oldCount, newCount){
+      if(!sticksDiv) return Promise.resolve();
+      const removed = Math.max(0, oldCount - newCount);
+      if(removed<=0) return Promise.resolve();
+      const bars = Array.from(sticksDiv.querySelectorAll('.group .bar'));
+      const toRemove = bars.slice(-removed);
+      return new Promise(resolve=>{
+        toRemove.forEach((b,i)=> setTimeout(()=> b.classList.add('removed'), i*70));
+        setTimeout(()=>{ renderSticks(newCount); resolve(); }, 420 + (toRemove.length-1)*70 + 40);
+      });
+    }
+
+    async function postJson(path, body){
+      try{
+        const res = await fetch(path, {method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)});
+        const j = await res.json();
+        return j;
+      } catch(e){ appendLog('Система','Ошибка сети: '+ (e && e.message? e.message: String(e))); return {ok:false, error:String(e)}; }
+    }
+
+    // -- fireworks/confetti/neon implementations (same as earlier, kept compact) --
+    const palette = ['#ff6fa3','#ff9abf','#ffd1e8','#ff80ab','#ffd08a','#ffe07b','#9be3ff','#8ae6b8','#c4a7ff'];
+    function createRocket(startX){
+      if(!fxCanvas) return null;
+      let x = startX, y = fxCanvas.height + 10, vx = (Math.random()-0.5)*2, vy = -6 - Math.random()*6;
+      let targetY = Math.random()*fxCanvas.height*0.45 + fxCanvas.height*0.08;
+      let exploded=false, particles=[];
+      const color = palette[Math.floor(Math.random()*palette.length)];
+      return {
+        done:false,
+        update(){
+          if(!exploded){ x+=vx; y+=vy; vy+=0.12; if(y<=targetY || vy>0){ exploded=true; const cnt = 20+Math.floor(Math.random()*40); for(let i=0;i<cnt;i++){ const ang=Math.random()*Math.PI*2; const speed=1.6+Math.random()*5; particles.push({x:x,y:y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,life:60+Math.random()*120,color:palette[Math.floor(Math.random()*palette.length)],size:2+Math.random()*3}); } } }
+          else { particles.forEach(p=>{ p.vy+=0.06; p.x+=p.vx; p.y+=p.vy; p.life-=1; }); particles = particles.filter(p=>p.life>0); if(particles.length===0) this.done=true; }
+        },
+        draw(ctx){ if(!exploded){ ctx.fillStyle=color; ctx.beginPath(); ctx.ellipse(x,y,3,6,0,0,Math.PI*2); ctx.fill(); } else { particles.forEach(p=>{ ctx.globalAlpha = Math.max(0,p.life/140); ctx.fillStyle = p.color; ctx.fillRect(p.x,p.y,p.size,p.size); ctx.globalAlpha = 1; }); } }
+      };
+    }
+    function launchFireworksPack(count=5){
+      if(!fxCtx) return;
+      const rockets=[]; for(let i=0;i<count;i++) rockets.push(createRocket(Math.random()*fxCanvas.width*0.8 + fxCanvas.width*0.1));
+      let tick=0;
+      function loop(){ fxCtx.clearRect(0,0,fxCanvas.width, fxCanvas.height); rockets.forEach(r=> r.update()); rockets.forEach(r=> r.draw(fxCtx)); for(let i=rockets.length-1;i>=0;i--) if(rockets[i].done) rockets.splice(i,1); tick++; if((rockets.length>0||tick<200)) requestAnimationFrame(loop); else fxCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height); }
+      loop();
+    }
+    function launchConfetti(cnt=200){ if(!fxCtx) return; const parts=[]; for(let i=0;i<cnt;i++) parts.push({x:fxCanvas.width/2 + (Math.random()-0.5)*300, y:fxCanvas.height*0.25 + (Math.random()-0.5)*120, vx:(Math.random()-0.5)*10, vy:(Math.random()*-6)-2, life:80+Math.random()*140, size:6+Math.random()*10, color:palette[Math.floor(Math.random()*palette.length)], shape: Math.random()<0.5?'rect':'circle'}); let t=0; function step(){ fxCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height); parts.forEach(p=>{ p.vy += 0.22; p.x += p.vx; p.y += p.vy; p.life -= 1; fxCtx.globalAlpha = Math.max(0, p.life/160); fxCtx.fillStyle = p.color; if(p.shape==='rect') fxCtx.fillRect(p.x,p.y,p.size,p.size*0.6); else { fxCtx.beginPath(); fxCtx.ellipse(p.x,p.y,p.size/2,p.size/2,0,0,Math.PI*2); fxCtx.fill(); } }); for(let i=parts.length-1;i>=0;i--) if(parts[i].life<=0) parts.splice(i,1); if(parts.length>0 && t<400){ t++; requestAnimationFrame(step); } else fxCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height); } step(); }
+    function launchNeonBloom(x=fxCanvas.width/2,y=fxCanvas.height/3,rings=5){ if(!fxCtx) return; const particles=[]; for(let r=0;r<rings;r++){ const count=24+Math.floor(Math.random()*20); for(let i=0;i<count;i++){ const ang=Math.random()*Math.PI*2; const speed=(2+r*0.5)+Math.random()*3; particles.push({x:x,y:y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,life:60+Math.random()*100,color:palette[Math.floor(Math.random()*palette.length)],size:2+Math.random()*4,glow:12+Math.random()*20}); } } let tt=0; function step(){ fxCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height); particles.forEach(p=>{ p.vy += 0.06; p.x += p.vx; p.y += p.vy; p.life -= 1; fxCtx.globalCompositeOperation='lighter'; fxCtx.fillStyle=p.color; fxCtx.beginPath(); const gsize = p.glow * Math.max(0, p.life/140); fxCtx.ellipse(p.x,p.y,gsize,gsize*0.6,0,0,Math.PI*2); fxCtx.fill(); fxCtx.globalCompositeOperation='source-over'; }); for(let i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1); if(particles.length>0 && tt<360){ tt++; requestAnimationFrame(step); } else fxCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height); } step(); }
+
+    function launchRain(duration=300){ if(!rainCtx) return; overlayDark.classList.add('active'); mainCard && mainCard.classList.add('shake'); setTimeout(()=> mainCard && mainCard.classList.remove('shake'), 700); const W=rainCanvas.width,H=rainCanvas.height; const parts=[]; for(let i=0;i<220;i++) parts.push({x:Math.random()*W,y:Math.random()*-H,vy:4+Math.random()*5,len:12+Math.random()*18,alpha:0.12+Math.random()*0.2,color:(Math.random()<0.6)?'rgba(30,10,20,0.9)':'rgba(70,20,40,0.9)'}); let t=0; function step(){ rainCtx.clearRect(0,0,W,H); rainCtx.lineWidth=1.8; parts.forEach(p=>{ rainCtx.beginPath(); rainCtx.strokeStyle=p.color; rainCtx.globalAlpha = p.alpha; rainCtx.moveTo(p.x,p.y); rainCtx.lineTo(p.x,p.y+p.len); rainCtx.stroke(); p.y += p.vy; if(p.y>H+30) p.y = -20 - Math.random()*H*0.6; }); rainCtx.globalAlpha=1; t++; if(t<duration) requestAnimationFrame(step); else { rainCtx.clearRect(0,0,W,H); overlayDark.classList.remove('active'); } } step(); }
+    function launchAshes(duration=260){ if(!rainCtx) return; overlayDark.classList.add('active'); const W=rainCanvas.width,H=rainCanvas.height; const ashes=[]; for(let i=0;i<140;i++) ashes.push({x:Math.random()*W,y:Math.random()*-H,vy:0.4+Math.random()*1.4,alpha:0.12+Math.random()*0.28,size:6+Math.random()*10,drift:(Math.random()-0.5)*0.4}); let t=0; function step(){ rainCtx.clearRect(0,0,W,H); ashes.forEach(a=>{ rainCtx.fillStyle = 'rgba(100,50,60,'+a.alpha+')'; rainCtx.beginPath(); rainCtx.ellipse(a.x,a.y,a.size/2,a.size/2,0,0,Math.PI*2); rainCtx.fill(); a.y += a.vy; a.x += a.drift; if(a.y>H+30){ a.y = -10 - Math.random()*H*0.4; a.x = Math.random()*W; } }); t++; if(t<duration) requestAnimationFrame(step); else { rainCtx.clearRect(0,0,W,H); overlayDark.classList.remove('active'); } } step(); }
+    function launchFadeOut(duration=700){ overlayDark.classList.add('active'); document.body.style.transition='filter 700ms ease'; document.body.style.filter='grayscale(0.4) brightness(0.6)'; setTimeout(()=>{ document.body.style.filter=''; overlayDark.classList.remove('active'); }, duration+400); }
+
+    // high-level animations + sound dispatch, with randomize support
+    const victoryOptions = ['fireworks','confetti','neon','all'];
+    const lossOptions = ['rain','ashes','fade'];
+    function chooseRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+    function performVictoryAnimation(type){
+      const randomize = randomizeBox && randomizeBox.checked;
+      const t = randomize ? chooseRandom(victoryOptions) : (type || (victorySelect? victorySelect.value : 'all'));
+      if(t==='fireworks'){ launchFireworksPack(6); playVictorySound('fireworks'); }
+      else if(t==='confetti'){ launchConfetti(240); playVictorySound('confetti'); }
+      else if(t==='neon'){ launchNeonBloom(fxCanvas.width/2, fxCanvas.height/3, 6); playVictorySound('neon');}
+      else { launchFireworksPack(6); setTimeout(()=>launchConfetti(260),180); setTimeout(()=>launchNeonBloom(fxCanvas.width/2, fxCanvas.height*0.28,6),350); playVictorySound('all'); }
+    }
+    function performLossAnimation(type){
+      const randomize = randomizeBox && randomizeBox.checked;
+      const t = randomize ? chooseRandom(lossOptions) : (type || (lossSelect? lossSelect.value : 'rain'));
+      if(t==='rain'){ launchRain(320); playLossSound('rain'); }
+      else if(t==='ashes'){ launchAshes(260); playLossSound('ashes'); }
+      else { launchFadeOut(700); playLossSound('fade'); }
+      mainCard && mainCard.classList.add('shake'); setTimeout(()=> mainCard && mainCard.classList.remove('shake'),700);
+    }
+
+    // expose globally (keeps backward compatibility)
+    window.performVictoryAnimation = performVictoryAnimation;
+    window.performLossAnimation = performLossAnimation;
+
+    // preview buttons
+    previewVictory && previewVictory.addEventListener('click', ()=> {
+      const v = victorySelect ? victorySelect.value : 'all';
+      performVictoryAnimation(v);
+      appendLog('Система','Прослушать поб. анимацию: ' + v);
+    });
+    previewLoss && previewLoss.addEventListener('click', ()=> {
+      const l = lossSelect ? lossSelect.value : 'rain';
+      performLossAnimation(l);
+      appendLog('Система','Прослушать пораж. анимацию: ' + l);
+    });
+
+    // demo buttons
+    demoVictory && demoVictory.addEventListener('click', ()=> { performVictoryAnimation(); appendLog('Система','Демо победы'); });
+    demoLoss && demoLoss.addEventListener('click', ()=> { performLossAnimation(); appendLog('Система','Демо поражения'); });
+
+    // Game & buttons wiring (safe)
+    startBtn && startBtn.addEventListener('click', async ()=>{
+      const sticks = Math.max(1, parseInt(initIn.value) || 13);
+      const difficulty = diff ? diff.value : 'hard';
+      startBtn.disabled = true;
+      appendLog('Система','Запуск: ' + sticks + ' спичек, уровень ' + difficulty);
+      const j = await postJson('/start', {sticks, difficulty});
+      if(!j.ok){ appendLog('Система','Ошибка: ' + (j.error || 'unknown')); startBtn.disabled = false; return; }
+      renderSticks(j.sticks || 0); setState(j.sticks || 0, j.turn); appendLog('Система','Игра готова. Ваш ход.');
+      startBtn.style.display='none'; resetBtn && (resetBtn.style.display='inline-block');
+    });
+
+    resetBtn && resetBtn.addEventListener('click', ()=> location.reload());
+
+    document.querySelectorAll('[data-take]').forEach(btn=>{
+      if(!btn) return;
+      btn.addEventListener('click', async ()=>{
+        const take = parseInt(btn.dataset.take,10);
+        if(currentTurn !== 'player'){ appendLog('Система','Сейчас не ваш ход.'); return; }
+        appendLog('Игрок','Берёт ' + take);
+        const before = currentSticks;
+        const j = await postJson('/player_move', {take});
+        if(!j.ok){ appendLog('Система','Ошибка: ' + (j.error || 'unknown')); setState(before,'player'); return; }
+        if(j.winner === 'player'){ await animateRemove(before,0); setState(0,null); appendLog('Игрок','Вы выиграли! 🎉'); performVictoryAnimation(); return; }
+        const afterPlayer = before - take;
+        await animateRemove(before, afterPlayer);
+        appendLog('Бот','Берёт ' + j.botMove + '. ' + (j.botExplanation || ''));
+        const after = j.sticks || 0;
+        await animateRemove(afterPlayer, after); setState(after,'player');
+        if(j.winner === 'bot'){ appendLog('Система','Бот выиграл. Вы проиграли.'); performLossAnimation(); }
+      });
+    });
+
+    refreshBtn && refreshBtn.addEventListener('click', async ()=>{
+      try { const r = await fetch('/state'); const j = await r.json(); if(!j.ok){ appendLog('Система','Игра не запущена'); return; } renderSticks(j.sticks||0); setState(j.sticks||0, j.turn); appendLog('Система','Состояние обновлено'); } catch(e){ appendLog('Система','Ошибка: ' + (e && e.message ? e.message : String(e))); }
+    });
+
+    // initial UI
+    renderSticks(0); setState(0,null); appendLog('Система','Готово. Выберите уровень и нажмите Запустить.');
+
+    // helper: postJson defined inside to avoid hoisting issues
+    async function postJson(path, body){
+      try{ const r = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}); const j = await r.json(); return j; } catch(e){ appendLog('Система','Ошибка сети: ' + (e && e.message ? e.message : String(e))); return {ok:false, error:String(e)}; }
+    }
+  });
+  </script>
+
+  <!-- bootstrap bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,22 +1,49 @@
 % bot.pl
+% Три уровня сложности: easy, medium, hard.
+% Использует правило кратности (MaxTake+1)=4 для medium/hard.
+:- encoding(utf8).
 :- use_module(utils).
 
-% бот выбирает количество спичек и объясняет ход
-bot_move(Sticks, Move, Explanation) :-
+% Основный интерфейс: bot_move_level(+Sticks, +Level, -Move, -Explanation)
+% Level: easy | medium | hard  (atoms)
+bot_move_level(Sticks, Level, Move, Explanation) :-
     MaxTake is min(3, Sticks),
-    % проверка: можно ли выиграть прямо
-    (Sticks =< MaxTake ->
-        Move is Sticks,  % берём все оставшиеся спички и выигрываем
-        format(atom(Explanation), 'Беру последние спички и выигрываю: ~w', [Move])
+    ( Sticks =< MaxTake ->
+        Move = Sticks,
+        format(atom(Explanation), 'Беру последние ~w спичек и выигрываю.', [Move])
     ;
-        % стратегия (2^n-1)
-        find_target(Sticks, Target),
-        Desired is Sticks - Target,
-        Move is min(Desired, MaxTake),
-        format(atom(Explanation), 'Стремлюсь оставить (2^n-1) = ~w спичек', [Target])
+        ( Level == easy ->
+            % полностью случайный ход
+            rand_between(1, MaxTake, Move),
+            Target is Sticks - Move,
+            format(atom(Explanation), 'Easy: случайный ход: беру ~w, остаётся ~w.', [Move, Target])
+        ; Level == medium ->
+            % в 50% случаев оптимально, в 50% случайно
+            rand_between(1, 2, Choice),
+            ( Choice =:= 1 ->
+                % оптимальный ход (mod 4)
+                optimal_move(Sticks, MaxTake, Move, Explanation)
+            ;
+                rand_between(1, MaxTake, Move),
+                Target is Sticks - Move,
+                format(atom(Explanation), 'Medium: случайный ход: беру ~w, остаётся ~w.', [Move, Target])
+            )
+        ; % default или hard
+            % жёстко оптимальный (deterministic)
+            optimal_move(Sticks, MaxTake, Move, Explanation)
+        )
     ).
 
-% найти ближайшее (2^n - 1) меньше текущих спичек
-find_target(Sticks, Target) :-
-    findall(X, (between(0, 10, N), X is 2^N - 1, X < Sticks), L),
-    max_list(L, Target).
+% optimal_move(+Sticks,+MaxTake,-Move,-Explanation)
+optimal_move(Sticks, MaxTake, Move, Explanation) :-
+    R is Sticks mod (MaxTake + 1), % mod 4
+    ( R =\= 0 ->
+        Move = R,
+        Target is Sticks - Move,
+        format(atom(Explanation), 'Оптимальный ход (оставляю кратное ~w): беру ~w, остаётся ~w.', [MaxTake+1, Move, Target])
+    ;
+        % проигрышная позиция — берем 1 (детерминированно)
+        Move = 1,
+        Target is Sticks - Move,
+        format(atom(Explanation), 'Проигрышная позиция (кратно ~w). Беру ~w, остаётся ~w.', [MaxTake+1, Move, Target])
+    ).

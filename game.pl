@@ -1,4 +1,8 @@
 % game.pl
+% Консольный игровой цикл Nim (игрок vs бот)
+:- encoding(utf8).
+:- use_module(utils).
+:- use_module(bot).
 
 % start_game(+InitialSticks)
 start_game(InitialSticks) :-
@@ -20,10 +24,13 @@ game_loop(Sticks, player) :-
     print_line,
     format('Осталось спичек: ~w~n', [Sticks]),
     print_sticks(Sticks),
+    MaxTake is min(3, Sticks),
+    format('Доступно взять от 1 до ~w спичек.~n', [MaxTake]),
     write('Сколько спичек взять (1-3)? '),
     read(Input),
     ( valid_move(Input, Sticks)
     -> NewSticks is Sticks - Input,
+       format('Вы взяли ~w спичек.~n', [Input]),
        game_loop(NewSticks, bot)
     ;  write('Неверный ход, попробуйте снова.'), nl,
        game_loop(Sticks, player)

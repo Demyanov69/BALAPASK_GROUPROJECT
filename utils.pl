@@ -1,17 +1,35 @@
 % utils.pl
+% Вспомогательные предикаты: печать спичек, случайное число, разделитель
+:- encoding(utf8).
+:- module(utils, [print_sticks/1, rand_between/3, print_line/0]).
 
-% вывод спичек в виде ASCII
+% печать спичек в группах по 4, визуально приятнее
 print_sticks(0) :- nl.
 print_sticks(N) :-
     N > 0,
-    write('▒'),
-    N1 is N - 1,
-    print_sticks(N1).
+    print_sticks_groups(N), nl.
 
-% генерация случайного числа от Min до Max
+print_sticks_groups(0) :- !.
+print_sticks_groups(N) :-
+    N > 0,
+    Group is min(4, N),
+    write('['),
+    print_group_symbols(Group),
+    write('] '),
+    N1 is N - Group,
+    print_sticks_groups(N1).
+
+print_group_symbols(0) :- !.
+print_group_symbols(K) :-
+    K > 0,
+    write('▒'),
+    K1 is K - 1,
+    print_group_symbols(K1).
+
+% генерация случайного числа от Min до Max (включительно)
+% используем встроенный random_between/3 SWI-Prolog
 rand_between(Min, Max, Rand) :-
-    RandomMax is Max - Min + 1,
-    Rand is Min + random(RandomMax).
+    random_between(Min, Max, Rand).
 
 % вывод разделительной линии
 print_line :- write('--------------------------'), nl.

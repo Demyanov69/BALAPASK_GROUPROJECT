@@ -1,9 +1,9 @@
 % main.pl
-
-% сначала загружаем все файлы вручную
-:- [utils].
-:- [bot].
-:- [game].
+% Загрузка и запуск консольной игры
+:- encoding(utf8).
+:- ensure_loaded(utils).
+:- ensure_loaded(bot).
+:- ensure_loaded(game).
 
 main :-
     write('Введите количество спичек для игры: '),
