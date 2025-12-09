@@ -1,7 +1,3 @@
-% server.pl
-% Исправленный HTTP сервер для Nim (SWI-Prolog).
-% Поддерживает старт игры с выбором сложности: easy, medium, hard.
-% Подразумевается, что utils.pl и bot.pl лежат в той же папке.
 :- encoding(utf8).
 :- set_prolog_flag(encoding, utf8).
 
@@ -116,7 +112,3 @@ player_move_handler(Request) :-
     ;
         reply_json_dict(_{ok:false, error:'Не ваша очередь или игра не запущена'})
     ).
-
-% -----------------------
-% Конец файла
-% -----------------------
