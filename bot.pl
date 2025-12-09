@@ -1,4 +1,3 @@
-% bot.pl
 % Три уровня сложности: easy, medium, hard.
 % Использует правило кратности (MaxTake+1)=4 для medium/hard.
 :- encoding(utf8).
