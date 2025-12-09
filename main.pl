@@ -1,4 +1,3 @@
-% main.pl
 % Загрузка и запуск консольной игры
 :- encoding(utf8).
 :- ensure_loaded(utils).
