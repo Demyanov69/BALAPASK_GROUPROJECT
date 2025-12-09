@@ -1,4 +1,3 @@
-% game.pl
 % Консольный игровой цикл Nim (игрок vs бот)
 :- encoding(utf8).
 :- use_module(utils).
