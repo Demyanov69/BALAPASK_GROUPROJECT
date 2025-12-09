@@ -1,9 +1,7 @@
-% utils.pl
-% Вспомогательные предикаты: печать спичек, случайное число, разделитель
 :- encoding(utf8).
 :- module(utils, [print_sticks/1, rand_between/3, print_line/0]).
 
-% печать спичек в группах по 4, визуально приятнее
+% печать спичек в группах по 4
 print_sticks(0) :- nl.
 print_sticks(N) :-
     N > 0,
@@ -26,10 +24,9 @@ print_group_symbols(K) :-
     K1 is K - 1,
     print_group_symbols(K1).
 
-% генерация случайного числа от Min до Max (включительно)
+% генерация случайного числа от Min до Max
 % используем встроенный random_between/3 SWI-Prolog
 rand_between(Min, Max, Rand) :-
     random_between(Min, Max, Rand).
 
-% вывод разделительной линии
 print_line :- write('--------------------------'), nl.
