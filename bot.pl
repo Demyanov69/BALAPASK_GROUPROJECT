@@ -1,4 +1,5 @@
 % Три уровня сложности: easy, medium, hard.
+:- module(bot, [bot_move_level/4]).
 :- encoding(utf8).
 :- use_module(utils).
 
