@@ -1,10 +1,7 @@
 % Три уровня сложности: easy, medium, hard.
-% Использует правило кратности (MaxTake+1)=4 для medium/hard.
 :- encoding(utf8).
 :- use_module(utils).
 
-% Основный интерфейс: bot_move_level(+Sticks, +Level, -Move, -Explanation)
-% Level: easy | medium | hard  (atoms)
 bot_move_level(Sticks, Level, Move, Explanation) :-
     MaxTake is min(3, Sticks),
     ( Sticks =< MaxTake ->
@@ -27,13 +24,11 @@ bot_move_level(Sticks, Level, Move, Explanation) :-
                 Target is Sticks - Move,
                 format(atom(Explanation), 'Medium: случайный ход: беру ~w, остаётся ~w.', [Move, Target])
             )
-        ; % default или hard
-            % жёстко оптимальный (deterministic)
+        ; % hard
             optimal_move(Sticks, MaxTake, Move, Explanation)
         )
     ).
 
-% optimal_move(+Sticks,+MaxTake,-Move,-Explanation)
 optimal_move(Sticks, MaxTake, Move, Explanation) :-
     R is Sticks mod (MaxTake + 1), % mod 4
     ( R =\= 0 ->
