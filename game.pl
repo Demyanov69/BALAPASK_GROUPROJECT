@@ -1,9 +1,7 @@
-% Консольный игровой цикл Nim (игрок vs бот)
 :- encoding(utf8).
 :- use_module(utils).
 :- use_module(bot).
 
-% start_game(+InitialSticks)
 start_game(InitialSticks) :-
     nl,
     write('Добро пожаловать в игру Nim!'), nl,
