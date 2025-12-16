@@ -7,7 +7,7 @@
 :- use_module(library(http/http_json)).
 :- use_module(library(http/http_parameters)).
 
-% Загружаем локальные файлы (ensure_loaded гарантирует порядок загрузки)
+% Загружаем локальные файлы (ensure_loaded для последовательной загрузки)
 :- ensure_loaded('utils.pl').
 :- ensure_loaded('bot.pl').
 
@@ -25,8 +25,7 @@
 % Запуск сервера
 % -----------------------
 start_server(Port) :-
-    http_server(http_dispatch, [port(Port)]),
-    format('Server started at http://localhost:~w~n', [Port]).
+    http_server(http_dispatch, [port(Port)]).
 
 % -----------------------
 % Статический обработчик файлов
