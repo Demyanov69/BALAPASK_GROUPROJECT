@@ -26,10 +26,7 @@ print_group_symbols(K) :-
     K1 is K - 1,
     print_group_symbols(K1).
 
-% генерация случайного числа от Min до Max (включительно)
-% используем встроенный random_between/3 SWI-Prolog
-rand_between(Min, Max, Rand) :-
-    random_between(Min, Max, Rand).
 
 % вывод разделительной линии
 print_line :- write('--------------------------'), nl.
+
