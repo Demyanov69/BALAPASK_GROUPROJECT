@@ -11,17 +11,17 @@ bot_move_level(Sticks, Level, Move, Explanation) :-
     ;
         ( Level == easy ->
             % полностью случайный ход
-            rand_between(1, MaxTake, Move),
+            random_between(1, MaxTake, Move),
             Target is Sticks - Move,
             format(atom(Explanation), 'Easy: случайный ход: беру ~w, остаётся ~w.', [Move, Target])
         ; Level == medium ->
             % в 50% случаев оптимально, в 50% случайно
-            rand_between(1, 2, Choice),
+            random_between(1, 2, Choice),
             ( Choice =:= 1 ->
                 % оптимальный ход (mod 4)
                 optimal_move(Sticks, MaxTake, Move, Explanation)
             ;
-                rand_between(1, MaxTake, Move),
+                random_between(1, MaxTake, Move),
                 Target is Sticks - Move,
                 format(atom(Explanation), 'Medium: случайный ход: беру ~w, остаётся ~w.', [Move, Target])
             )
